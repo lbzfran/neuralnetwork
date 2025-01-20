@@ -1,0 +1,1 @@
+https://c-faq.com/aryptr/dynmuldimary.html
