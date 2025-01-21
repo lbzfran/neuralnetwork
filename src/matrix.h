@@ -1,9 +1,12 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
-# define Swap(a, b) (((a) ^= (b)), ((b) ^= (a)), ((a) ^= (b)))
 // NOTE(liam): replace stdint include with base
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "alloc.h"
 /*#define ArrayAccess(a, i, j) ((a)[(i) * ncolumns + (j)])*/
 
 typedef struct matrix_t {
@@ -17,7 +20,7 @@ int MatrixCheckSameDim(Matrix* a, Matrix* b);
 int MatrixAddScalar(Matrix* b, Matrix* a, float x);
 int MatrixAddMatrix(Matrix* c, Matrix* a, Matrix* b);
 int MatrixDot(Matrix* c, Matrix* a, Matrix* b);
-void MatrixTranspose(Matrix* a);
+void MatrixTranspose(Matrix a, Matrix* b);
 /*#define MatrixGet(A, i, j) ((A)[(i * A->cols + j)])*/
 
 inline int
@@ -132,21 +135,21 @@ MatrixApply(Matrix a, float (*fun)(float))
 }
 
 inline void
-MatrixTranspose(Matrix* a)
+MatrixTranspose(Matrix a, Matrix* b)
 {
-    for (size_t row_idx = 0;
-            row_idx < a->rows;
-            row_idx++)
-    {
-        for (size_t col_idx = 0;
-                col_idx < a->cols;
-                col_idx++)
+        for (size_t row_idx = 0;
+                row_idx < b->rows;
+                row_idx++)
         {
-            // TODO(liam): perform swap.
-            /*a->V[col_idx * a->rows + row_idx] = a->V[row_idx * a->cols + col_idx];*/
+            for (size_t col_idx = 0;
+                    col_idx < b->cols;
+                    col_idx++)
+            {
+                printf("(%lu,%lu)=%d", row_idx, col_idx, a.V[col_idx * a.cols + row_idx]);
+                b->V[row_idx * b->cols + col_idx] = a.V[col_idx * a.cols + row_idx];
+            }
+            printf("\n");
         }
-    }
-    Swap(a->rows, a->cols);
 }
 
 #endif

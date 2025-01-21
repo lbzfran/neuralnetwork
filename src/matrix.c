@@ -18,11 +18,14 @@ MatrixPrint(Matrix a)
         }
         printf("\n");
     }
+    printf("dim: %lu %lu\n", a.rows, a.cols);
 }
 
 int
 main(void)
 {
+
+    Arena* arena = ArenaMalloc(Kilobytes(1));
 
     Matrix matA = {
         .rows = 4,
@@ -30,8 +33,8 @@ main(void)
         .V = (int*)malloc(matA.rows * matA.cols * sizeof(int))
     };
     Matrix matB = {
-        .rows = 4,
-        .cols = 6,
+        .rows = 6,
+        .cols = 4,
         .V = (int*)malloc(matB.rows * matB.cols * sizeof(int))
     };
 
@@ -43,8 +46,7 @@ main(void)
                 j < matA.cols;
                 j++)
         {
-            matA.V[i * matA.cols + j] = (i + j) % 2;
-            matB.V[i * matB.cols + j] = (i + j + 1) % 2;
+            matA.V[i * matA.cols + j] = (i + 1) * (j + 1);
         }
     }
 
@@ -57,25 +59,25 @@ main(void)
     printf("matB:\n");
     MatrixPrint(matB);
     printf("\n");
-
-    printf("perf mat add\n");
-    MatrixAddMatrix(&matA, &matB, &matA);
-
-    MatrixPrint(matA);
-    printf("\n");
-
-    MatrixAddScalar(&matA, &matA, 2);
-
-    MatrixPrint(matA);
-    printf("\n");
+    /**/
+    /*printf("perf mat add\n");*/
+    /*MatrixAddMatrix(&matA, &matB, &matA);*/
+    /**/
+    /*MatrixPrint(matA);*/
+    /*printf("\n");*/
+    /**/
+    /*MatrixAddScalar(&matA, &matA, 2);*/
+    /**/
+    /*MatrixPrint(matA);*/
+    /*printf("\n");*/
     printf("Transpose:\n");
 
-    MatrixTranspose(&matA);
+    MatrixTranspose(matA, &matB);
 
-    MatrixPrint(matA);
+    MatrixPrint(matB);
     printf("\n");
-
     /*free(matA.V);*/
     /*free(matB.V);*/
+    ArenaFree(arena);
     return 0;
 }
