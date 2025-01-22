@@ -1,4 +1,4 @@
 
-typedef struct neural_network_t {
+typedef struct neural_network {
     int input;
 } NeuralNetwork;
