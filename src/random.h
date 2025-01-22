@@ -3,10 +3,6 @@
 
 #include "base.h"
 
-# define MaxRandomNumber 0xF9B4C0
-# define MinRandomNumber 0x02B06C
-
-
 typedef struct random_series {
     unsigned int index;
 } RandomSeries;
@@ -22,6 +18,9 @@ float RandomBetween(RandomSeries* series, float min, float max);
 #endif
 
 #ifdef RAND_IMPLEMENTATION
+
+# define MaxRandomNumber 0xF9B4C0
+# define MinRandomNumber 0x02B06C
 
 //TODO(liam): find a formula to generate this table later on.
 static int RandomNumberTable[] = {
