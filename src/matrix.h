@@ -51,7 +51,7 @@ void MatrixSigmoid(Matrix); // "apply" wrapper with sigmoidf
 #endif
 
 #define MATRIX_IMPLEMENTATION // debug purposes
-#ifdef  MATRIX_IMPLEMENTATION
+#ifdef MATRIX_IMPLEMENTATION
 
 inline float
 sigmoidf(float x)

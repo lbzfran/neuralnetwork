@@ -13,6 +13,10 @@ typedef struct vector3_t {
     float x, y, z;
 } Vector3;
 
+#endif
+
+#ifdef VECTOR_IMPLEMENTATION
+
 inline Vector2
 Vector2Add(Vector2 a, Vector2 b)
 {
