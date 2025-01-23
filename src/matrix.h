@@ -3,13 +3,13 @@
 
 // NOTE(liam): replace stdint include with base
 #include <stdio.h>
-#include <stdlib.h>
 #include <math.h>
 
 #include "alloc.h"
 #include "random.h"
 
 #ifndef m_alloc
+#include <stdlib.h>
 #define m_alloc malloc
 #define m_realloc realloc
 #define m_free free
