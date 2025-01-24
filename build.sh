@@ -1,4 +1,4 @@
 #!/bin/sh
 
 
-cc -Wall -o gate_test ./src/gate.c -lm
+cc -Wall -o nn_test ./src/nn.c -lm

@@ -28,7 +28,10 @@ typedef struct Matrix {
 Matrix MatrixAlloc(Arena* arena, size_t rows, size_t cols);
 Matrix MatrixMalloc(size_t rows, size_t cols);
 void MatrixFree(Matrix a);
-void MatrixPrint(Matrix a);
+void MatrixPrint_(Matrix a, const char* name);
+
+#define MatrixPrint(m) MatrixPrint_(m, #m)
+
 void MatrixRandomize(RandomSeries* series, Matrix a, float low, float high);
 void MatrixFill(Matrix, float);
 
@@ -96,9 +99,9 @@ MatrixFree(Matrix a)
 }
 
 inline void
-MatrixPrint(Matrix a)
+MatrixPrint_(Matrix a, const char* name)
 {
-    printf("[\n");
+    printf("%s = [\n", name);
     for (size_t i = 0;
             i < a.rows;
             i++)
