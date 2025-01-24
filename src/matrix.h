@@ -167,9 +167,9 @@ inline void
 MatrixAddScalar(Matrix b, Matrix a, float x)
 {
     for (size_t i = 0; i < a.rows; i++) {
-        for (size_t col_idx = 0; col_idx < a.cols; col_idx++) {
-            /*b->V[i][col_idx] = a->V[i][col_idx] + x;*/
-            MatrixAT(b, i, col_idx) = MatrixAT(a, i, col_idx) + x;
+        for (size_t j = 0; j < a.cols; j++) {
+            /*b->V[i][j] = a->V[i][j] + x;*/
+            MatrixAT(b, i, j) = MatrixAT(a, i, j) + x;
         }
     }
 }
@@ -181,12 +181,12 @@ MatrixAddMatrix(Matrix c, Matrix a, Matrix b)
     Assert(a.cols == b.cols, "");
 
     for (size_t i = 0; i < a.rows; i++) {
-        for (size_t col_idx = 0; col_idx < b.cols; col_idx++) {
-            /*c->V[i][col_idx] = a->V[i][col_idx] + b->V[i][col_idx];*/
-            /*c.V[i * c.cols + col_idx] = a.V[i * a.cols + col_idx] + b.V[i * b.cols
-             * + col_idx];*/
-            MatrixAT(c, i, col_idx) =
-                MatrixAT(a, i, col_idx) + MatrixAT(b, i, col_idx);
+        for (size_t j = 0; j < b.cols; j++) {
+            /*c->V[i][j] = a->V[i][j] + b->V[i][j];*/
+            /*c.V[i * c.cols + j] = a.V[i * a.cols + j] + b.V[i * b.cols
+             * + j];*/
+            MatrixAT(c, i, j) =
+                MatrixAT(a, i, j) + MatrixAT(b, i, j);
         }
     }
 }
@@ -207,9 +207,9 @@ inline void
 MatrixSubScalar(Matrix b, Matrix a, float x)
 {
     for (size_t i = 0; i < a.rows; i++) {
-        for (size_t col_idx = 0; col_idx < a.cols; col_idx++) {
-            /*b->V[i][col_idx] = a->V[i][col_idx] + x;*/
-            MatrixAT(b, i, col_idx) = MatrixAT(a, i, col_idx) - x;
+        for (size_t j = 0; j < a.cols; j++) {
+            /*b->V[i][j] = a->V[i][j] + x;*/
+            MatrixAT(b, i, j) = MatrixAT(a, i, j) - x;
         }
     }
 }
