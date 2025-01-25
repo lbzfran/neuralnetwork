@@ -2,18 +2,19 @@
  * ---------------
  * Liam Bagabag
  * Version: 1.0.1
+ * requires: ARENA_IMPLEMENTATION
  * ---------------
  */
-#ifndef ALLOC_H
-#define ALLOC_H
+#ifndef ARENA_H
+#define ARENA_H
 
 // PLATFORM-INDEPENDENT
 #include "base.h"
 
 // DEFINE YOUR OWN MALLOC HERE.
-#ifndef a_malloc
+#ifndef a_alloc
 # include <stdlib.h>
-# define a_malloc malloc
+# define a_alloc malloc
 # define a_realloc realloc
 # define a_free free
 #endif
@@ -59,12 +60,12 @@ ArenaTemp GetScratch(Arena*);
 
 #endif
 
-#ifdef ALLOC_IMPLEMENTATION
+#ifdef ARENA_IMPLEMENTATION
 #include <string.h>
 
 // NOTE(liam): does not inherently allocate memory.
 // Must be performed as user sees fit before call.
-inline void
+void
 ArenaAlloc(Arena* arena, memory_index size, uint8* base_addr)
 {
     arena->size = size;
@@ -73,18 +74,18 @@ ArenaAlloc(Arena* arena, memory_index size, uint8* base_addr)
     if (!base_addr) {
         // NOTE(liam): if NULL, auto-generate memory using malloc.
         // Can also just throw an error here.
-        arena->base = a_malloc(size);
+        arena->base = (uint8*)a_alloc(size);
     }
     arena->tempCount = 0;
 }
 
 // NOTE(liam): convenience arena wrapper that uses
 // malloc implementation defined by user (or stdlib).
-inline Arena*
+Arena*
 ArenaMalloc(memory_index size)
 {
-    Arena* arena = (Arena*)a_malloc(size);
-    ArenaAlloc(arena, size, (uint8*)malloc(size));
+    Arena* arena = (Arena*)a_alloc(size);
+    ArenaAlloc(arena, size, (uint8*)a_alloc(size));
 
     return(arena);
 }
@@ -93,7 +94,7 @@ ArenaMalloc(memory_index size)
 // using other forms of memory allocation (VirtualAlloc, mmap).
 // A good way to check if you need it is if you used the
 // ArenaMalloc function for allocation.
-inline void
+void
 ArenaFree(Arena* arena)
 {
     if (arena) {
@@ -102,7 +103,7 @@ ArenaFree(Arena* arena)
     }
 }
 
-inline void*
+void*
 ArenaPush(Arena* arena, memory_index size)
 {
     Assert(arena->pos + size < arena->size, "requested alloc size exceeds arena size.")
@@ -112,7 +113,7 @@ ArenaPush(Arena* arena, memory_index size)
     return(res);
 }
 
-inline void*
+void*
 ArenaPushZero(Arena* arena, memory_index size)
 {
     Assert(arena->pos + size < arena->size, "requested alloc size exceeds arena size.")
@@ -128,13 +129,13 @@ ArenaPushZero(Arena* arena, memory_index size)
 /*void ArenaPop(Arena *arena, memory_index size) {*/
 /*}*/
 
-inline uint64
+uint64
 ArenaGetPos(Arena *arena)
 {
     return(arena->pos);
 }
 
-inline void
+void
 ArenaSetPos(Arena *arena, memory_index pos)
 {
     Assert(pos <= arena->pos, "Setting position beyond current arena allocation.");
@@ -142,7 +143,7 @@ ArenaSetPos(Arena *arena, memory_index pos)
 }
 
 // NOTE(liam): effectively resets the Arena.
-inline void
+void
 ArenaClear(Arena *arena)
 {
     arena->pos = 0;
@@ -150,7 +151,7 @@ ArenaClear(Arena *arena)
 }
 
 // NOTE(liam): temporary memory.
-inline ArenaTemp
+ArenaTemp
 ArenaTempBegin(Arena *arena)
 {
     ArenaTemp res;
@@ -163,7 +164,7 @@ ArenaTempBegin(Arena *arena)
     return(res);
 }
 
-inline void
+void
 ArenaTempEnd(ArenaTemp temp)
 {
     Arena* arena = temp.arena;
@@ -178,13 +179,13 @@ ArenaTempEnd(ArenaTemp temp)
 // NOTE(liam): should call after temp use.
 // need to make sure all temps are accounted for before
 // resuming allocations.
-inline void
+void
 ArenaTempCheck(Arena* arena)
 {
     Assert(arena->tempCount == 0, "")
 }
 
-inline ArenaTemp
+ArenaTemp
 GetScratch(Arena* arena)
 {
     Assert(arena->pos + sizeof(ArenaTemp) <= arena->size, "requested temp alloc exceeds arena size.");

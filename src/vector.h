@@ -2,6 +2,7 @@
  * ---------------
  * Liam Bagabag
  * Version: 1.0.0
+ * require: none (inline)
  * ---------------
  */
 #ifndef VECTOR_H
@@ -18,10 +19,6 @@ typedef struct vector2_t {
 typedef struct vector3_t {
     float x, y, z;
 } Vector3;
-
-#endif
-
-#ifdef VECTOR_IMPLEMENTATION
 
 inline Vector2
 Vector2Add(Vector2 a, Vector2 b)

@@ -1,9 +1,8 @@
 
-#define MATRIX_IMPLEMENTATION
-#define ALLOC_IMPLEMENTATION
-#define RAND_IMPLEMENTATION
 
-#include "matrix.h"
+#define ARENA_IMPLEMENTATION
+#include "arena.h"
+#include "random.h"
 
 #include <stdio.h>
 #include <stdlib.h>

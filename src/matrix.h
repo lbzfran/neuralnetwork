@@ -3,6 +3,7 @@
  * Liam Bagabag
  * Version: 2.0.0
  * dependencies: alloc.h (specific), random.h (specific)
+ * requires: none (inline)
  * ---------------
  */
 #ifndef MATRIX_H
@@ -12,10 +13,13 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "alloc.h"
 #include "random.h"
 
-#ifndef m_alloc
+#ifdef a_alloc
+# define m_alloc a_alloc
+# define m_realloc a_realloc
+# define m_free a_free
+#else
 # include <stdlib.h>
 # define m_alloc malloc
 # define m_realloc realloc
@@ -37,7 +41,8 @@ typedef struct Matrix {
 #define MatrixAT(m, i, j) ((m).V[(i) * m.cols + (j)])
 
 Matrix MatrixAlloc(size_t rows, size_t cols, float*);
-#define MatrixArenaAlloc(arena, i, j) (MatrixAlloc((i), (j), PushArray(arena, float, (i) * (j))))
+
+# define MatrixArenaAlloc(arena, i, j) (MatrixAlloc((i), (j), PushArray(arena, float, (i) * (j))))
 
 Matrix MatrixMalloc(size_t rows, size_t cols);
 void MatrixFree(Matrix a);
@@ -63,11 +68,6 @@ void MatrixTranspose(Matrix, Matrix);
 void MatrixApply(Matrix, float (*)(float));
 void MatrixSigmoid(Matrix); // "apply" wrapper with sigmoidf
 
-
-#endif
-
-/*#define MATRIX_IMPLEMENTATION // debug purposes*/
-#ifdef MATRIX_IMPLEMENTATION
 
 inline float
 sigmoidf(float x)
@@ -302,6 +302,12 @@ MatrixSigmoid(Matrix a)
     /*    }*/
     /*}*/
     MatrixApply(a, sigmoidf);
+}
+
+inline void
+MatrixReLU(Matrix a)
+{
+    MatrixApply(a, reluf);
 }
 
 #endif

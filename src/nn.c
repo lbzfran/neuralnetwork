@@ -1,103 +1,117 @@
-
-#define MATRIX_IMPLEMENTATION
-#define ALLOC_IMPLEMENTATION
-#define RAND_IMPLEMENTATION
-
 #include "matrix.h"
+#include "nn.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-
-static RandomSeries local_series;
-
-typedef struct {
-    Matrix a0;
-    Matrix w1, b1, a1;
-    Matrix w2, b2, a2;
-} Xor;
-
-float forward_xor(Xor m)
+NrlNet
+NrlNetAlloc(int capacity, NrlLayer* layers)
 {
-    MatrixDot(m.a1, m.a0, m.w1);
-    MatrixSum(m.a1, m.b1);
-    MatrixSigmoid(m.a1);
+    NrlNet res = (NrlNet) {
+        .capacity = capacity,
+        .size = 0,
+        .layers = layers
+    };
 
-    MatrixDot(m.a2, m.a1, m.w2);
-    MatrixSum(m.a2, m.b2);
-    MatrixSigmoid(m.a2);
-
-    return *m.a2.V;
+    return res;
 }
 
-float cost(Xor m, Matrix ti, Matrix to)
+NrlNet
+NrlNetMalloc(int capacity)
 {
-    Assert(ti.rows == to.rows, "");
-    Assert(to.cols == m.a2.cols, "");
-    size_t n = ti.rows;
+    NrlNet res = (NrlNet) {
+        .size = 0,
+        .layers = (NrlLayer*)m_alloc(sizeof(NrlLayer) * capacity)
+    };
 
-    float c = 0;
-    for (size_t i = 0; i < n; i++) {
-        Matrix x = MatrixRow(ti, i);
-        Matrix y = MatrixRow(to, i);
+    return res;
+}
 
-        MatrixCopy(m.a0, x);
-        forward_xor(m);
+void
+NrlNetFree(NrlNet net)
+{
+    m_free(net.layers);
+}
 
-        size_t q = to.cols;
-        for (size_t j = 0; j < q; j++) {
-            float d = MatrixAT(m.a2, 0, j) - MatrixAT(y, 0, j);
-            c += d * d;
-        }
+//NOTE(liam): allocates a single layer.
+void
+NrlLayerAlloc(RandomSeries* local_series,
+        NrlLayer* layer,
+        int inputSize, int outputSize,
+        Matrix _alloced_w,
+        Matrix _alloced_b,
+        Matrix _alloced_outputs,
+        Matrix _alloced_deltas)
+{
+    layer->inputSize = inputSize;
+    layer->outputSize = outputSize;
 
+    layer->w = _alloced_w;
+    layer->b = _alloced_b;
+
+    layer->output = _alloced_outputs;
+    layer->dt = _alloced_deltas;
+
+    /*MatrixRandomize(RandomSeries *series, Matrix a, float low, float high)*/
+    MatrixRandomize(local_series, layer->w, 0, 1);
+    MatrixRandomize(local_series, layer->b, 0, 1);
+    MatrixFill(layer->output, 0.f);
+    MatrixFill(layer->dt, 0.f);
+}
+
+// NOTE(liam); initializes layers for nrlnet.
+void
+NrlNetInit(RandomSeries* local_series, Arena* arena, NrlNet net, int* layerSizes)
+{
+    NrlLayer* layer = net.layers + net.size;
+    for (int i = 0; i < net.capacity; i++) {
+
+        NrlLayerAlloc(local_series,
+            layer, layerSizes[i], layerSizes[i+1],
+            MatrixArenaAlloc(arena, 2, 2),
+            MatrixArenaAlloc(arena, 2, 2),
+            MatrixArenaAlloc(arena, 2, 2),
+            MatrixArenaAlloc(arena, 2, 2)
+        );
     }
-    return c/n;
 }
 
-float ti[] = {
-    0, 0, 0,
-    0, 1, 1,
-    1, 0, 1,
-    1, 1, 0
-};
-
-int main(void)
+void
+NrlNetPrint(NrlNet net)
 {
-    Arena* local_arena = ArenaMalloc(Kilobytes(2));
-    local_series = RandomSeed(122);
+    for (size_t i = 0; i < net.size; i++) {
+        NrlLayer* layer = net.layers + i;
 
-    Xor m;
-
-    Matrix ti = MatrixArenaAlloc(local_arena, 2, 1);
-    Matrix to = MatrixArenaAlloc(local_arena, 2, 1);
-
-    m.a0 = MatrixArenaAlloc(local_arena, 1, 2);
-
-    m.w1 = MatrixArenaAlloc(local_arena, 2, 2);
-    m.b1 = MatrixArenaAlloc(local_arena, 1, 2);
-    m.a1 = MatrixArenaAlloc(local_arena, 1, 2); // activation
-
-    m.w2 = MatrixArenaAlloc(local_arena, 2, 1);
-    m.b2 = MatrixArenaAlloc(local_arena, 1, 1);
-    m.a2 = MatrixArenaAlloc(local_arena, 1, 1);
-
-    MatrixRandomize(&local_series, m.w1, 0, 1);
-    MatrixRandomize(&local_series, m.w2, 0, 1);
-    MatrixRandomize(&local_series, m.b1, 0, 1);
-    MatrixRandomize(&local_series, m.b2, 0, 1);
-
-    printf("cost = %f\n", cost(m, ti, to));
-
-    for (size_t i = 0; i < 2; i++) {
-        for (size_t j = 0; j < 2; j++) {
-            MatrixAT(m.a0, 0, 0) = i;
-            MatrixAT(m.a0, 0, 1) = j;
-            forward_xor(m);
-            float y = *m.a2.V;
-
-            printf("%zu ^ %zu = %f\n", i, j, y);
-        }
+        MatrixPrint(layer->w);
+        MatrixPrint(layer->b);
+        MatrixPrint(layer->output);
+        MatrixPrint(layer->dt);
     }
-
-    ArenaFree(local_arena);
-    return 0;
 }
+
+// TODO(liam): do this + free.
+/*inline void*/
+/*NrlNetLayerMalloc(NrlLayer* layer,*/
+/*        int inputSize, int outputSize,*/
+/*        Matrix _alloced_w,*/
+/*        Matrix _alloced_b,*/
+/*        Matrix _alloced_outputs,*/
+/*        Matrix _alloced_deltas)*/
+/*{*/
+/*    layer->inputSize = inputSize;*/
+/*    layer->outputSize = outputSize;*/
+/**/
+/*    layer->W = _alloced_w;*/
+/*    layer->B = _alloced_b;*/
+/**/
+/*    layer->output = _alloced_outputs;*/
+/*    layer->dt = _alloced_deltas;*/
+/*}*/
+
+/*inline void*/
+/*NrlNetAddLayer(NrlNet net, int layerType, int n, float(*activation)(float))*/
+/*{*/
+/*    NrlLayer* layers = net.layers;*/
+/**/
+/*    if (layerType == 0) // Deeep*/
+/*    {*/
+/**/
+/*    }*/
+/*}*/

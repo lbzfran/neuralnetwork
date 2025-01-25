@@ -1,11 +1,7 @@
-#define MATRIX_IMPLEMENTATION
-#define ALLOC_IMPLEMENTATION
-#define RAND_IMPLEMENTATION
+#define ARENA_IMPLEMENTATION
 
+#include "arena.h"
 #include "matrix.h"
-
-#include <stdio.h>
-#include <stdlib.h>
 
 static RandomSeries series;
 

@@ -2,6 +2,7 @@
  * ---------------
  * Liam Bagabag
  * Version: 1.0.0
+ * requires: none (inline)
  * ---------------
  */
 #ifndef RANDOM_H
@@ -20,10 +21,6 @@ float RandomUnilateral(RandomSeries* series);
 float RandomBilateral(RandomSeries* series);
 float RandomLerp(float A, float t, float B);
 float RandomBetween(RandomSeries* series, float min, float max);
-
-#endif
-
-#ifdef RAND_IMPLEMENTATION
 
 # define MaxRandomNumber 0xF9B4C0
 # define MinRandomNumber 0x02B06C
