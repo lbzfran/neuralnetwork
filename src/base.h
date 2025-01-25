@@ -1,3 +1,10 @@
+/*
+ * ---------------
+ * Liam Bagabag
+ * Version: 1.0.0
+ * ---------------
+ */
+
 #ifndef BASE_H
 #define BASE_H
 

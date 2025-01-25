@@ -1,3 +1,9 @@
+/*
+ * ---------------
+ * Liam Bagabag
+ * Version: 1.0.1
+ * ---------------
+ */
 #ifndef ALLOC_H
 #define ALLOC_H
 
@@ -5,10 +11,12 @@
 #include "base.h"
 
 // DEFINE YOUR OWN MALLOC HERE.
-#include <stdlib.h>
-#define a_malloc malloc
-#define a_realloc realloc
-#define a_free free
+#ifndef a_malloc
+# include <stdlib.h>
+# define a_malloc malloc
+# define a_realloc realloc
+# define a_free free
+#endif
 
 typedef struct memory_arena {
     memory_index size;
@@ -64,6 +72,7 @@ ArenaAlloc(Arena* arena, memory_index size, uint8* base_addr)
     arena->base = base_addr;
     if (!base_addr) {
         // NOTE(liam): if NULL, auto-generate memory using malloc.
+        // Can also just throw an error here.
         arena->base = a_malloc(size);
     }
     arena->tempCount = 0;

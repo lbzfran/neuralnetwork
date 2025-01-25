@@ -1,3 +1,9 @@
+/*
+ * ---------------
+ * Liam Bagabag
+ * Version: 1.0.0
+ * ---------------
+ */
 #ifndef RANDOM_H
 #define RANDOM_H
 

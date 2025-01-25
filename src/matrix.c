@@ -14,8 +14,8 @@ int main(void)
     Arena* arena = ArenaMalloc(Kilobytes(1));
     series = RandomSeed(1020);
 
-    Matrix m = MatrixAlloc(arena, 4, 4);
-    Matrix w = MatrixAlloc(arena, 4, 4);
+    Matrix m = MatrixArenaAlloc(arena, 4, 4);
+    Matrix w = MatrixArenaAlloc(arena, 4, 4);
 
     MatrixFill(w, 1);
     MatrixPrint(w);

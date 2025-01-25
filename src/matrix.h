@@ -1,3 +1,10 @@
+/*
+ * ---------------
+ * Liam Bagabag
+ * Version: 2.0.0
+ * dependencies: alloc.h (specific), random.h (specific)
+ * ---------------
+ */
 #ifndef MATRIX_H
 #define MATRIX_H
 
@@ -9,13 +16,17 @@
 #include "random.h"
 
 #ifndef m_alloc
-#include <stdlib.h>
-#define m_alloc malloc
-#define m_realloc realloc
-#define m_free free
+# include <stdlib.h>
+# define m_alloc malloc
+# define m_realloc realloc
+# define m_free free
 #endif
 
+// NOTE(liam): specific math functions for neural net operations
+// TODO(liam): likely move these in nn.h once its ready.
+float reluf(float x);
 float sigmoidf(float x);
+/*float softmaxf(float x);*/
 
 typedef struct Matrix {
     size_t rows;
@@ -25,7 +36,9 @@ typedef struct Matrix {
 
 #define MatrixAT(m, i, j) ((m).V[(i) * m.cols + (j)])
 
-Matrix MatrixAlloc(Arena* arena, size_t rows, size_t cols);
+Matrix MatrixAlloc(size_t rows, size_t cols, float*);
+#define MatrixArenaAlloc(arena, i, j) (MatrixAlloc((i), (j), PushArray(arena, float, (i) * (j))))
+
 Matrix MatrixMalloc(size_t rows, size_t cols);
 void MatrixFree(Matrix a);
 void MatrixPrint_(Matrix a, const char* name);
@@ -53,7 +66,7 @@ void MatrixSigmoid(Matrix); // "apply" wrapper with sigmoidf
 
 #endif
 
-#define MATRIX_IMPLEMENTATION // debug purposes
+/*#define MATRIX_IMPLEMENTATION // debug purposes*/
 #ifdef MATRIX_IMPLEMENTATION
 
 inline float
@@ -64,14 +77,26 @@ sigmoidf(float x)
     return 1.f / (1.f + expf(-x));
 }
 
+inline float
+reluf(float x)
+{
+    return x ? x > 0 : 0;
+}
+
+/*inline float*/
+/*softmax(float x)*/
+/*{*/
+/**/
+/*}*/
+
 inline Matrix
-MatrixAlloc(Arena* arena, size_t rows, size_t cols)
+MatrixAlloc(size_t rows, size_t cols, float* V)
 {
     Matrix res;
 
     res.rows = rows;
     res.cols = cols;
-    res.V = PushArray(arena, float, rows * cols);
+    res.V = V;
 
     return res;
 }

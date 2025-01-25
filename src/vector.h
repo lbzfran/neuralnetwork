@@ -1,3 +1,9 @@
+/*
+ * ---------------
+ * Liam Bagabag
+ * Version: 1.0.0
+ * ---------------
+ */
 #ifndef VECTOR_H
 #define VECTOR_H
 

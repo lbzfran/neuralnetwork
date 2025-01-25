@@ -67,16 +67,18 @@ int main(void)
 
     Xor m;
 
+    Matrix ti = MatrixArenaAlloc(local_arena, 2, 1);
+    Matrix to = MatrixArenaAlloc(local_arena, 2, 1);
 
-    m.a0 = MatrixAlloc(local_arena, 1, 2);
+    m.a0 = MatrixArenaAlloc(local_arena, 1, 2);
 
-    m.w1 = MatrixAlloc(local_arena, 2, 2);
-    m.b1 = MatrixAlloc(local_arena, 1, 2);
-    m.a1 = MatrixAlloc(local_arena, 1, 2); // activation
+    m.w1 = MatrixArenaAlloc(local_arena, 2, 2);
+    m.b1 = MatrixArenaAlloc(local_arena, 1, 2);
+    m.a1 = MatrixArenaAlloc(local_arena, 1, 2); // activation
 
-    m.w2 = MatrixAlloc(local_arena, 2, 1);
-    m.b2 = MatrixAlloc(local_arena, 1, 1);
-    m.a2 = MatrixAlloc(local_arena, 1, 1);
+    m.w2 = MatrixArenaAlloc(local_arena, 2, 1);
+    m.b2 = MatrixArenaAlloc(local_arena, 1, 1);
+    m.a2 = MatrixArenaAlloc(local_arena, 1, 1);
 
     MatrixRandomize(&local_series, m.w1, 0, 1);
     MatrixRandomize(&local_series, m.w2, 0, 1);
