@@ -2,7 +2,7 @@
  * ---------------
  * Liam Bagabag
  * Version: 1.0.0
- * dependencies: matrix.h (direct)
+ * dependencies: matrix.h (direct), random.h (direct)
  * requires: nn.c
  * ---------------
  */
@@ -34,8 +34,8 @@ typedef struct NrlNet {
 
 NrlNet NrlNetAlloc(int, NrlLayer*);
 #define NrlNetArenaAlloc(arena, n) (NrlNetAlloc((n), PushArray((arena), NrlLayer, (n))))
-
-NrlNet NrlNetMalloc(int);
+#define NrlNetMalloc(n) NrlNetAlloc((n), (NrlLayer*)m_alloc(sizeof(NrlLayer) * (n)))
+/*NrlNet NrlNetMalloc(int);*/
 void NrlNetFree(NrlNet);
 
 void

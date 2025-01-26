@@ -1,9 +1,13 @@
 
-#define MATRIX_IMPLEMENTATION
-#define ALLOC_IMPLEMENTATION
-#define RAND_IMPLEMENTATION
 
-#include "matrix.h"
+#define MATRIX_IMPLEMENTATION
+#include "../src/matrix.h"
+
+#define RAND_IMPLEMENTATION
+#include "../src/random.h"
+
+#define ARENA_IMPLEMENTATION
+#include "../src/arena.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,14 +15,14 @@
 
 static RandomSeries local_series;
 
-typedef float[3] sample;
+/*typedef float[3] sample;*/
 
-sample or_train[] = {
-    {0, 0, 0},
-    {0, 1, 1},
-    {1, 0, 1},
-    {1, 1, 1}
-};
+/*sample or_train[] = {*/
+/*    {0, 0, 0},*/
+/*    {0, 1, 1},*/
+/*    {1, 0, 1},*/
+/*    {1, 1, 1}*/
+/*};*/
 
 
 float *train[3];

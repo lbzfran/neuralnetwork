@@ -1,8 +1,9 @@
 
-
 #define ARENA_IMPLEMENTATION
-#include "arena.h"
-#include "random.h"
+#include "../src/arena.h"
+
+#define RAND_IMPLEMENTATION
+#include "../src/random.h"
 
 #include <stdio.h>
 #include <stdlib.h>

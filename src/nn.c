@@ -1,4 +1,5 @@
-#include "matrix.h"
+#define RAND_IMPLEMENTATION
+#define MATRIX_IMPLEMENTATION
 #include "nn.h"
 
 NrlNet
@@ -8,17 +9,6 @@ NrlNetAlloc(int capacity, NrlLayer* layers)
         .capacity = capacity,
         .size = 0,
         .layers = layers
-    };
-
-    return res;
-}
-
-NrlNet
-NrlNetMalloc(int capacity)
-{
-    NrlNet res = (NrlNet) {
-        .size = 0,
-        .layers = (NrlLayer*)m_alloc(sizeof(NrlLayer) * capacity)
     };
 
     return res;

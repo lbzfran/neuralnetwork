@@ -1,7 +1,12 @@
-#define ARENA_IMPLEMENTATION
 
-#include "arena.h"
-#include "matrix.h"
+#define MATRIX_IMPLEMENTATION
+#include "../src/matrix.h"
+
+#define ARENA_IMPLEMENTATION
+#include "../src/arena.h"
+
+#define RAND_IMPLEMENTATION
+#include "../src/random.h"
 
 static RandomSeries series;
 

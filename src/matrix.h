@@ -3,7 +3,7 @@
  * Liam Bagabag
  * Version: 2.0.0
  * dependencies: alloc.h (specific), random.h (specific)
- * requires: none (inline)
+ * requires: MATRIX_IMPLEMENTATION
  * ---------------
  */
 #ifndef MATRIX_H
@@ -15,11 +15,7 @@
 
 #include "random.h"
 
-#ifdef a_alloc
-# define m_alloc a_alloc
-# define m_realloc a_realloc
-# define m_free a_free
-#else
+#ifndef m_alloc
 # include <stdlib.h>
 # define m_alloc malloc
 # define m_realloc realloc
@@ -68,8 +64,11 @@ void MatrixTranspose(Matrix, Matrix);
 void MatrixApply(Matrix, float (*)(float));
 void MatrixSigmoid(Matrix); // "apply" wrapper with sigmoidf
 
+#endif
 
-inline float
+#ifdef MATRIX_IMPLEMENTATION
+
+float
 sigmoidf(float x)
 {
     // NOTE(liam): return value between 0 and 1 based on how far along
@@ -77,19 +76,19 @@ sigmoidf(float x)
     return 1.f / (1.f + expf(-x));
 }
 
-inline float
+float
 reluf(float x)
 {
     return x ? x > 0 : 0;
 }
 
-/*inline float*/
+/*float*/
 /*softmax(float x)*/
 /*{*/
 /**/
 /*}*/
 
-inline Matrix
+Matrix
 MatrixAlloc(size_t rows, size_t cols, float* V)
 {
     Matrix res;
@@ -101,7 +100,7 @@ MatrixAlloc(size_t rows, size_t cols, float* V)
     return res;
 }
 
-inline Matrix
+Matrix
 MatrixMalloc(size_t rows, size_t cols)
 {
     Matrix res;
@@ -114,7 +113,7 @@ MatrixMalloc(size_t rows, size_t cols)
     return res;
 }
 
-inline void
+void
 MatrixFree(Matrix a)
 {
     if (a.V)
@@ -123,7 +122,7 @@ MatrixFree(Matrix a)
     }
 }
 
-inline void
+void
 MatrixPrint_(Matrix a, const char* name)
 {
     printf("%s = [\n", name);
@@ -142,7 +141,7 @@ MatrixPrint_(Matrix a, const char* name)
     printf("]\n");
 }
 
-inline Matrix
+Matrix
 MatrixRow(Matrix a, size_t row)
 {
     return (Matrix) {
@@ -152,7 +151,7 @@ MatrixRow(Matrix a, size_t row)
     };
 }
 
-inline void
+void
 MatrixRandomize(RandomSeries* series, Matrix a, float low, float high)
 {
     for (size_t i = 0;
@@ -168,7 +167,7 @@ MatrixRandomize(RandomSeries* series, Matrix a, float low, float high)
     }
 }
 
-inline void
+void
 MatrixCopy(Matrix b, Matrix a)
 {
     Assert(a.rows == b.rows, "");
@@ -181,7 +180,7 @@ MatrixCopy(Matrix b, Matrix a)
 
 }
 
-inline void
+void
 MatrixFill(Matrix a, float x)
 {
     for (size_t i = 0; i < a.rows; i++) {
@@ -191,7 +190,7 @@ MatrixFill(Matrix a, float x)
     }
 }
 
-inline void
+void
 MatrixAddScalar(Matrix b, Matrix a, float x)
 {
     for (size_t i = 0; i < a.rows; i++) {
@@ -202,7 +201,7 @@ MatrixAddScalar(Matrix b, Matrix a, float x)
     }
 }
 
-inline void
+void
 MatrixAddMatrix(Matrix c, Matrix a, Matrix b)
 {
     Assert(a.rows == b.rows, "");
@@ -219,7 +218,7 @@ MatrixAddMatrix(Matrix c, Matrix a, Matrix b)
     }
 }
 
-inline void
+void
 MatrixSum(Matrix b, Matrix a)
 {
     Assert(b.rows == a.rows, "");
@@ -231,7 +230,7 @@ MatrixSum(Matrix b, Matrix a)
     }
 }
 
-inline void
+void
 MatrixSubScalar(Matrix b, Matrix a, float x)
 {
     for (size_t i = 0; i < a.rows; i++) {
@@ -242,7 +241,7 @@ MatrixSubScalar(Matrix b, Matrix a, float x)
     }
 }
 
-inline void
+void
 MatrixSubMatrix(Matrix c, Matrix a, Matrix b)
 {
     for (size_t i = 0; i < a.rows; i++) {
@@ -253,7 +252,7 @@ MatrixSubMatrix(Matrix c, Matrix a, Matrix b)
     }
 }
 
-inline void
+void
 MatrixDot(Matrix c, Matrix a, Matrix b)
 {
     // NOTE(liam): implied that both matrix dimensions are the same.
@@ -271,7 +270,7 @@ MatrixDot(Matrix c, Matrix a, Matrix b)
     }
 }
 
-inline void
+void
 MatrixApply(Matrix a, float (*fun)(float))
 {
     for (size_t i = 0; i < a.rows; i++) {
@@ -281,7 +280,7 @@ MatrixApply(Matrix a, float (*fun)(float))
     }
 }
 
-inline void
+void
 MatrixTranspose(Matrix b, Matrix a)
 {
     for (size_t i = 0; i < b.rows; i++) {
@@ -293,7 +292,7 @@ MatrixTranspose(Matrix b, Matrix a)
     }
 }
 
-inline void
+void
 MatrixSigmoid(Matrix a)
 {
     /*for (size_t i = 0; i < a.rows; i++) {*/
@@ -304,7 +303,7 @@ MatrixSigmoid(Matrix a)
     MatrixApply(a, sigmoidf);
 }
 
-inline void
+void
 MatrixReLU(Matrix a)
 {
     MatrixApply(a, reluf);

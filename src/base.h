@@ -108,7 +108,7 @@ int ap_float(float a, float b);
 // DEBUG START
 # define ENABLE_DEBUG
 # ifdef  ENABLE_DEBUG
-#  define Assert(c,msg) if (!(c)) { fprintf(stderr, "[-] <ASSERTION ERROR> at line %d:  %s\n", __LINE__, msg); exit(1); }
+#  define Assert(c,msg) if (!(c)) { fprintf(stderr, "[-] <ASSERTION ERROR> at line %d:  %s\n", __LINE__, (msg)); exit(1); }
 // NOTE(liam): force exit program. basically code should never reach this point.
 #  define Throw(msg) { fprintf(stderr, "[-] <THROW> at line %d: %s\n", __LINE__, msg); exit(1); }
 # else

@@ -1,14 +1,20 @@
 /*
  * ---------------
  * Liam Bagabag
- * Version: 1.0.0
- * requires: none (inline)
+ * Version: 1.1.0
+ * requires: RAND_IMPLEMENTATION
  * ---------------
  */
 #ifndef RANDOM_H
 #define RANDOM_H
 
 #include "base.h"
+#ifdef BASE_H
+# include "base.h"
+#else
+# define uint unsigned int
+# define ArrayCount(a) (sizeof(a)/sizeof(*(a)))
+#endif
 
 typedef struct random_series {
     unsigned int index;
@@ -21,6 +27,10 @@ float RandomUnilateral(RandomSeries* series);
 float RandomBilateral(RandomSeries* series);
 float RandomLerp(float A, float t, float B);
 float RandomBetween(RandomSeries* series, float min, float max);
+
+#endif
+
+#ifdef RAND_IMPLEMENTATION
 
 # define MaxRandomNumber 0xF9B4C0
 # define MinRandomNumber 0x02B06C
@@ -57,7 +67,7 @@ static int RandomNumberTable[] = {
     0x5A291F, 0x4F49A7, 0xA4B68F, 0x763D40, 0xD213A6, 0x8245FD, 0xF601E3
 };
 
-inline RandomSeries
+RandomSeries
 RandomSeed(uint value)
 {
     RandomSeries series;
@@ -65,7 +75,7 @@ RandomSeed(uint value)
     return(series);
 }
 
-inline uint
+uint
 RandomNextInt(RandomSeries* series)
 {
     // returns current value of index, and increments index position.
@@ -76,7 +86,7 @@ RandomNextInt(RandomSeries* series)
     return(res);
 }
 
-inline uint
+uint
 RandomChoice(RandomSeries* series, uint N)
 {
     // random choice between [0, N).
@@ -86,7 +96,7 @@ RandomChoice(RandomSeries* series, uint N)
     return(res);
 }
 
-inline float
+float
 RandomUnilateral(RandomSeries* series)
 {
     // range of [0 to 1].
@@ -96,7 +106,7 @@ RandomUnilateral(RandomSeries* series)
     return(res);
 }
 
-inline float
+float
 RandomBilateral(RandomSeries* series)
 {
     // range of [-1 to 1].
@@ -105,7 +115,7 @@ RandomBilateral(RandomSeries* series)
     return(res);
 }
 
-inline float
+float
 RandomLerp(float A, float t, float B)
 {
     // Linear Interpolation
@@ -114,7 +124,7 @@ RandomLerp(float A, float t, float B)
     return(res);
 }
 
-inline float
+float
 RandomBetween(RandomSeries* series, float min, float max)
 {
     /*float range = max - min;*/

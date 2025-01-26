@@ -1,9 +1,8 @@
 
+#include "../src/nn.h"
 
 #define ARENA_IMPLEMENTATION
-#include "arena.h"
-#include "random.h"
-#include "matrix.h"
+#include "../src/arena.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,8 +66,8 @@ int main(void)
 
     Xor m;
 
-    Matrix ti = MatrixArenaAlloc(local_arena, 2, 1);
-    Matrix to = MatrixArenaAlloc(local_arena, 2, 1);
+    Matrix ti = MatrixArenaAlloc(local_arena, 2, 2);
+    Matrix to = MatrixArenaAlloc(local_arena, 2, 2);
 
     m.a0 = MatrixArenaAlloc(local_arena, 1, 2);
 
