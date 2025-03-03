@@ -17,7 +17,7 @@ The main build script requires a POSIX shell to run.
 ./build.sh
 ```
 
-Alternatively, there is a build script available for Powershell.
+Alternatively, there is a build script available for Powershell (for Windows-based systems).
 
 ```pwsh
 .\build.ps1
