@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "arena.h"
 #include "random.h"
 
 #ifndef m_alloc

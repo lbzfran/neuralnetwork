@@ -5,6 +5,8 @@
 #define ARENA_IMPLEMENTATION
 #include "arena.h"
 
+// NOTE(liam): does not handle new data well.
+// train data is too limited; severe overfitting.
 
 float32 train[][3] = {
     {0, 0, 0},
@@ -40,7 +42,7 @@ dsigmoidf(float32 z)
     return z * (1 - z);
 }
 
-inline float32
+float32
 squaref(float32 x)
 {
     return x * x;
@@ -57,7 +59,7 @@ float32 cost(float32 *y_pred, float32 *y, uint32 size)
         sum += squaref(y_error);
     }
 
-    return sum;
+    return sum / size;
 }
 
 // NOTE(liam):
@@ -116,12 +118,16 @@ int main(int argc, char **argv)
     RandomSeed(&series, seed);
     printf("seed: %d\n", seed);
 
+    float32 rate = 0.01;
+    float32 y_error = 1.f;
     // sum of array
     float32 x_train[trainCount] = {0, 0, 0, 1, 1, 0, 1, 1};
+    float32 x_test[trainCount] = {0, 0, 0, 0, 0, 0, 0, 0};
     float32 w[layerCount][trainCount];
     float32 b[layerCount];
     float32 a[layerCount];
-    float32 y[layerCount] = {0, 1, 1, 0};
+    float32 y[layerCount] = {0, 1, 1, 1};
+    float32 y_test[layerCount] = {0, 0, 0, 0};
 
     for (uint32 l = 0; l < layerCount; l++)
     {
@@ -139,29 +145,45 @@ int main(int argc, char **argv)
 
     // forward propagation
     // calculate a "layer" of neurons.
-    for (int32 l = 0; l < layerCount; l++)
-    {
-        float32 z = 0;
-        for (int32 i = 0; i < trainCount; i++)
-        {
-            z += x_train[i] * w[l][i];
-        }
-        z += b[l];
-
-        a[l] = sigmoidf(z);
-
-    }
-    float32 c = cost(a, y, layerCount);
-
     VarPrintFloatArray(x_train, 2);
+    VarPrintFloatArray(y, 4);
+
+    uint32 l_iter = 0;
+    while (y_error > 0.00010)
+    {
+        for (int32 l = 0; l < layerCount; l++)
+        {
+            float32 z = 0;
+            for (int32 i = 0; i < trainCount; i++)
+            {
+                z += x_train[i] * w[l][i];
+            }
+            z += b[l];
+
+            a[l] = sigmoidf(z);
+        }
+        y_error = cost(a, y, layerCount);
+
+        for (uint32 l = 0; l < layerCount; l++)
+        {
+            float32 d_error = 2 * (a[l] - y[l]) / layerCount;
+            float32 gradient =  d_error * dsigmoidf(a[l]);
+            for (uint32 i = 0; i < trainCount; i++)
+            {
+                w[l][i] -= rate * gradient * x_train[i];
+            }
+            b[l] -= rate * gradient;
+        }
+        VarPrintFloat(y_error);
+    }
+
     for (int l = 0; l < layerCount; l++)
     {
         VarPrintFloatSubArray(w, l, 2);
     }
     VarPrintFloatArray(b, 4);
-    VarPrintFloatArray(y, 4);
-
-    VarPrintFloat(c);
+    VarPrintFloatArray(a, 4);
+    VarPrintFloat(y_error);
 
     return 0;
 }

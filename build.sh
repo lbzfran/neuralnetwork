@@ -10,4 +10,5 @@ BUILD_DIR=./build
 # cc -Wall -o $BUILD_DIR/gate_test ./tests/test_gate.c -lm
 # cc -Wall -o $BUILD_DIR/fullnn_test ./src/main.c ./src/nn.c -lm
 
-cc -Wall -Wpedantic -ggdb -fanalyzer -fsanitize=address -o $BUILD_DIR/perceptron -I./src/ ./src/random.c ./tests/perceptron.c -lm
+# cc -Wall -Wpedantic -ggdb -fanalyzer -fsanitize=address -o $BUILD_DIR/perceptron -I./src/ ./src/random.c ./tests/perceptron.c -lm
+cc -Wall -Wpedantic -ggdb -fanalyzer -fsanitize=address -o $BUILD_DIR/network -I./src/ ./src/random.c ./tests/network.c -lm
