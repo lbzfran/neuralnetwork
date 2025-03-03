@@ -3,7 +3,7 @@
 
 static const uint32 A = 1664525;
 static const uint32 C = 1013904223;
-static const uint32 M = 4294967296;
+static const uint64 M = 4294967296;
 
 inline static float32
 Lerp(float32 a, float32 t, float32 b)
@@ -23,7 +23,8 @@ inline uint32
 RandomNextInt(RandomSeries* series)
 {
     // returns current value of index, and increments index position.
-    uint32 res = (uint32)(series->index/65536);
+    /*uint32 res = (uint32)(series->index/65536);*/
+    uint32 res = series->index;
     series->index = (A * series->index + C) % M;
 
     return(res);
@@ -43,7 +44,7 @@ inline float32
 RandomUnilateral(RandomSeries* series)
 {
     // range of [0 to 1].
-    float32 div = 1.0f / (float32)MaxRandomNumber;
+    float32 div = 1.0f / M;
     float32 res = div * (float32)RandomNextInt(series);
 
     return(res);
