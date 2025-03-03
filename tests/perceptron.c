@@ -40,6 +40,11 @@ dsigmoidf(float32 z)
     return z * (1 - z);
 }
 
+inline float32
+squaref(float32 x)
+{
+    return x * x;
+}
 
 // NOTE(liam): calculate one given an output of a full cycle of training
 // whose size matches an established label data.
@@ -48,8 +53,8 @@ float32 cost(float32 *y_pred, float32 *y, uint32 size)
     float32 sum = 0;
     for (uint32 i = 0; i < size; i++)
     {
-        float32 y_exp = *(y_pred + i) - *(y + i);
-        sum += expf(y_exp);
+        float32 y_error = *(y_pred + i) - *(y + i);
+        sum += squaref(y_error);
     }
 
     return sum;
@@ -63,29 +68,22 @@ float32 cost(float32 *y_pred, float32 *y, uint32 size)
 //  a[L-1] * f'(z[L]) * 2(a[L] - y)
 //  cost
 //
-float32 backprop(
-    float rate,
-    float c,
-    float32 *x,
-    float32 *w,
-    float32 *a_last,
-    float32 *b_l,
-    float32 *y,
-    uint32 size
-)
-{
-    for (uint32 i = 0; i > size; i++)
-    {
-        float32 gradient = c * dsigmoidf(a_last[i]) * x[i];
-
-        w[i] += rate * gradient;
-    }
-
-    float32 bias_gradient = c * dsigmoidf(a_last[i]);
-    *b_l += rate * bias_gradient;
-}
-
-// NOTE(liam): backpropagation
+/*float32 backprop(*/
+/*    float32 *x, // size l-1*/
+/*    float32 **w, // size l*/
+/*    float32 *b_l, // size 1*/
+/*    float rate,*/
+/*    float c,*/
+/*    uint32 size*/
+/*)*/
+/*{*/
+/*    float32 gradient = c * dsigmoidf(z);*/
+/*    for (uint32 i = 0; i < size; i++)*/
+/*    {*/
+/*        w[i] += rate * gradient * x[i];*/
+/*    }*/
+/*    *b_l += rate * gradient;*/
+/*}*/
 
 #define VarPrintFloat(x) printf("%s = %f\n", (#x), x)
 #define VarPrintFloatArray_(x, k) do{ printf("[\n");\
@@ -146,10 +144,12 @@ int main(int argc, char **argv)
         float32 z = 0;
         for (int32 i = 0; i < trainCount; i++)
         {
-            z += x_train[i] * w[l][i] + b[l];
+            z += x_train[i] * w[l][i];
         }
+        z += b[l];
 
         a[l] = sigmoidf(z);
+
     }
     float32 c = cost(a, y, layerCount);
 
