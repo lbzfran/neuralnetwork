@@ -20,7 +20,7 @@ The main build script requires a POSIX shell to run.
 Alternatively, there is a build script available for Powershell.
 
 ```pwsh
-./build.ps1
+.\build.ps1
 ```
 
 The result will create a shared library inside the `./build/` directory,
