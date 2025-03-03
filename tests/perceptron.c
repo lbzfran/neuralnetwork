@@ -34,7 +34,7 @@ sigmoidf(float32 x)
 }
 
 #define VarPrintFloat(x) printf("%s = %f\n", (#x), x)
-#define VarPrintFloatArray(x, k) do{ printf("%s = [\n", #x);\
+#define VarPrintFloatArray_(x, k) do{ printf("[\n");\
                                   int j = 0;\
                                   for (int i = 0; i < ArrayCount(x); i++)\
                                   {\
@@ -42,58 +42,67 @@ sigmoidf(float32 x)
                                       printf("\t%f", x[i]);\
                                   }\
                                   printf("\n]\n");}while(0)
+#define VarPrintFloatArray(x, k) do{ printf("%s = ", #x); VarPrintFloatArray_(x, k); }while(0)
+#define VarPrintFloatSubArray(x, i, k) do{ printf("%s[%d] = ", #x, i); VarPrintFloatArray_(x[i], k); }while(0)
 
 #define trainCount 8
+
+// currently assuming all layers are symmetrical in size
+#define layerCount 8
 
 int main(int argc, char **argv)
 {
     RandomSeries series = {0};
     if (argc > 1)
     {
-        series = RandomSeed((uint32)(argv[1] - '0'));
+        RandomSeed(&series, (uint32)(argv[1] - '0'));
     }
     else
     {
-        series = RandomSeed(69);
+        RandomSeed(&series, 69);
     }
 
     // sum of array
     float32 x[trainCount] = {0, 1, 1, 0, 1, 1, 1, 0};
-    float32 w[trainCount];
-    float32 b[trainCount];
+    float32 w[layerCount][trainCount];
+    float32 b[layerCount];
+    float32 y[layerCount];
 
-    for (int32 i = 0; i < trainCount; i++)
+    for (uint32 l = 0; l < layerCount; l++)
     {
-        w[i] = RandomBilateral(&series);
-        b[i] = RandomBilateral(&series);
+        b[l] = RandomBilateral(&series);
+        for (uint32 i = 0; i < trainCount; i++)
+        {
+            w[l][i] = RandomBilateral(&series);
+        }
     }
 
-    float32 sum = 0;
-    for (int32 i = 0; i < trainCount; i++)
+    /*for (int l = 0; l < layerCount; l++)*/
+    /*{*/
+    /*    VarPrintFloatArray(w[l], 6);*/
+    /*    VarPrintFloatArray(b[l], 6);*/
+    /*}*/
+
+    // calculate a "layer" of neurons.
+    for (int32 l = 0; l < layerCount; l++)
     {
-        sum += x[i] * w[i] - b[i];
+        float32 sum = 0;
+        for (int32 i = 0; i < trainCount; i++)
+        {
+            sum += x[i] * w[l][i];
+        }
+        sum += b[l];
+
+        y[l] = sigmoidf(sum);
     }
-    sum /= 4;
-    // sum
-    /*float32 x0 = 1;*/
-    /*float32 w0 = RandomBilateral(&series);*/
-    /*float32 b0 = RandomBilateral(&series);*/
-    /**/
-    /*float32 sum = x0 * w0 - b0;*/
-
-    float32 y0 = sigmoidf(sum);
-
-    /*VarPrintFloat(x0);*/
-    /*VarPrintFloat(w0);*/
-    /*VarPrintFloat(b0);*/
-    /*VarPrintFloat(sum);*/
-    /*VarPrintFloat(y0);*/
 
     VarPrintFloatArray(x, 6);
-    VarPrintFloatArray(w, 6);
+    for (int l = 0; l < layerCount; l++)
+    {
+        VarPrintFloatSubArray(w, l, 6);
+    }
     VarPrintFloatArray(b, 6);
-    VarPrintFloat(sum);
-    VarPrintFloat(y0);
+    VarPrintFloatArray(y, 6);
 
     return 0;
 }

@@ -1,6 +1,10 @@
 
 #include "random.h"
 
+static const uint32 A = 1664525;
+static const uint32 C = 1013904223;
+static const uint32 M = 4294967296;
+
 inline static float32
 Lerp(float32 a, float32 t, float32 b)
 {
@@ -9,13 +13,10 @@ Lerp(float32 a, float32 t, float32 b)
     return(res);
 }
 
-inline RandomSeries
-RandomSeed(uint32 value)
+inline void
+RandomSeed(RandomSeries *series, uint32 value)
 {
-    RandomSeries series;
-    series.index = value * 1103515245 + RandomSalt;
-
-    return(series);
+    series->index = (A * value + C) % M;
 }
 
 inline uint32
@@ -23,7 +24,7 @@ RandomNextInt(RandomSeries* series)
 {
     // returns current value of index, and increments index position.
     uint32 res = (uint32)(series->index/65536);
-    series->index *= 1103515245 + RandomSalt;
+    series->index = (A * series->index + C) % M;
 
     return(res);
 }
