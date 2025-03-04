@@ -32,19 +32,21 @@ float sigmoidf(float x);
 typedef struct Matrix {
     size_t rows;
     size_t cols;
-    float* V;
-} Matrix;
+    float *V;
+} Matrix, Row;
 
 #define MatrixAT(m, i, j) ((m).V[(i) * m.cols + (j)])
+#define RowAT(r, i) MatrixAT(r, 1, i)
 
 Matrix MatrixAlloc(size_t rows, size_t cols, float*);
 
-# define MatrixArenaAlloc(arena, i, j) (MatrixAlloc((i), (j), PushArray(arena, float, (i) * (j))))
+#define MatrixArenaAlloc(arena, i, j) (MatrixAlloc((i), (j), PushArray(arena, float, (i) * (j))))
+#define RowArenaAlloc(arena, i) MatrixArenaAlloc(arena, 1, i)
 
 Matrix MatrixMalloc(size_t rows, size_t cols);
 void MatrixFree(Matrix a);
-void MatrixPrint_(Matrix a, const char* name);
 
+void MatrixPrint_(Matrix a, const char* name);
 #define MatrixPrint(m) MatrixPrint_(m, #m)
 
 void MatrixRandomize(RandomSeries* series, Matrix a, float low, float high);
