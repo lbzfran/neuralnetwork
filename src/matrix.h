@@ -36,7 +36,7 @@ typedef struct Matrix {
 } Matrix, Row;
 
 #define MatrixAT(m, i, j) ((m).V[(i) * m.cols + (j)])
-#define RowAT(r, i) MatrixAT(r, 1, i)
+#define RowAT(r, i) MatrixAT(r, 0, i)
 
 Matrix MatrixAlloc(size_t rows, size_t cols, float*);
 
@@ -111,7 +111,7 @@ MatrixMalloc(size_t rows, size_t cols)
     res.rows = rows;
     res.cols = cols;
     res.V = (float*)m_alloc(sizeof(float) * rows * cols);
-    Assert(!res.V, "Malloc failed during Matrix Allocation.");
+    Assert(!res.V && "Malloc failed during Matrix Allocation.");
 
     return res;
 }
@@ -173,8 +173,8 @@ MatrixRandomize(RandomSeries* series, Matrix a, float low, float high)
 void
 MatrixCopy(Matrix b, Matrix a)
 {
-    Assert(a.rows == b.rows, "");
-    Assert(a.cols == b.cols, "");
+    Assert(a.rows == b.rows);
+    Assert(a.cols == b.cols);
     for (size_t i = 0; i < b.rows; i++) {
         for (size_t j = 0; j < b.cols; j++) {
             MatrixAT(b, i, j) = MatrixAT(a, i, j);
@@ -207,8 +207,8 @@ MatrixAddScalar(Matrix b, Matrix a, float x)
 void
 MatrixAddMatrix(Matrix c, Matrix a, Matrix b)
 {
-    Assert(a.rows == b.rows, "");
-    Assert(a.cols == b.cols, "");
+    Assert(a.rows == b.rows);
+    Assert(a.cols == b.cols);
 
     for (size_t i = 0; i < a.rows; i++) {
         for (size_t j = 0; j < b.cols; j++) {
@@ -224,8 +224,8 @@ MatrixAddMatrix(Matrix c, Matrix a, Matrix b)
 void
 MatrixSum(Matrix b, Matrix a)
 {
-    Assert(b.rows == a.rows, "");
-    Assert(b.cols == a.cols, "");
+    Assert(b.rows == a.rows);
+    Assert(b.cols == a.cols);
     for (size_t i = 0; i < a.rows; i++) {
         for (size_t j = 0; j < b.cols; j++) {
             MatrixAT(b, i, j) += MatrixAT(a, i, j);
@@ -259,9 +259,9 @@ void
 MatrixDot(Matrix c, Matrix a, Matrix b)
 {
     // NOTE(liam): implied that both matrix dimensions are the same.
-    Assert(a.cols == b.rows, "");
-    Assert(a.rows == c.rows, "");
-    Assert(c.cols == b.cols, "");
+    Assert(a.cols == b.rows);
+    Assert(a.rows == c.rows);
+    Assert(c.cols == b.cols);
 
     for (size_t i = 0; i < a.rows; i++) {
         for (size_t j = 0; j < b.cols; j++) {

@@ -8,6 +8,7 @@
 #ifndef RANDOM_H
 #define RANDOM_H
 
+#include "def.h"
 #include "arena.h"
 
 typedef struct random_series {
