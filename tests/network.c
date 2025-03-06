@@ -73,8 +73,21 @@ void NeuralNetForward(NeuralHelper *nh, NeuralNet nn, Row x)
     MatrixCopy(A[0], Z[0]);
     MatrixSigmoid(A[0]);
 
+    /*printf("sizes of misint:\n");*/
+    /*printf("Z[%d] = {%lu, %lu}\n", 0, Z[0].rows, Z[0].cols);*/
+    /*printf("x = {%lu, %lu}\n", x.rows, x.cols);*/
+    /*printf("nn.W[%d] = {%lu, %lu}\n", 0, nn.W[0].rows, nn.W[0].cols);*/
+
     for (uint32 l = 1; l < nn.layerCount - 1; l++)
     {
+        /*if (l == nn.layerCount - 2)*/
+        /*{*/
+        /*    printf("sizes of misint:\n");*/
+        /*    printf("Z[%d] = {%lu, %lu}\n", l, Z[l].rows, Z[l].cols);*/
+        /*    printf("A[%d] = {%lu, %lu}\n", l-1, A[l-1].rows, A[l-1].cols);*/
+        /*    printf("nn.W[%d] = {%lu, %lu}\n", l, nn.W[l].rows, nn.W[l].cols);*/
+        /*}*/
+
         MatrixDot(Z[l], A[l-1], nn.W[l]);
         MatrixAddMatrix(Z[l], Z[l], nn.B[l]);
         MatrixCopy(A[l], Z[l]);
@@ -82,15 +95,33 @@ void NeuralNetForward(NeuralHelper *nh, NeuralNet nn, Row x)
     }
 }
 
+float32
+dsigmoidf(float32 z)
+{
+    return z * (1 - z);
+}
+
 float32 NeuralNetCost(NeuralNet, Matrix);
 
-void NeuralNetBackprop(Arena *arena, NeuralNet nn, Row x)
+// uses sgd
+void NeuralNetBackprop(Arena *arena, NeuralNet nn, Row x, float32 y)
 {
     NeuralHelper nh = {0};
     NeuralHelperInit(arena, &nh, nn);
 
     NeuralNetForward(&nh, nn, x); // populates nh with A and Z
 
+    // TODO(liam): adjust size; should y be a single element instead??
+    // How many x per backprop.. 1 example? or a matrix of examples?
+    // ANSWER: per SGD, only 1 example, with 1 output example.
+    /*size_t lastLayerSize = nn.layerSizes[nn.layerCount - 2];*/
+    Row delta = RowArenaAlloc(arena, 1);
+    /*printf("last size: %lu\n", lastLayerSize);*/
+
+    MatrixSubScalar(delta, nh.A[nn.layerCount - 2], y);
+    MatrixPrint(nh.A[nn.layerCount - 2]);
+    printf("y = %f\n", y);
+    MatrixPrint(delta);
 }
 
 void NeuralNetLearn(RandomSeries *series,
@@ -116,8 +147,8 @@ void NeuralNetLearn(RandomSeries *series,
         // TODO(liam): continue here for learning algo
     }
 
-    MatrixPrint(x_train);
-    MatrixPrint(y_train);
+    /*MatrixPrint(x_train);*/
+    /*MatrixPrint(y_train);*/
 }
 
 int main(void)
@@ -126,7 +157,6 @@ int main(void)
     RandomSeries series = {0};
     RandomSeed(&series, 123423213);
 
-    size_t layerCount = 12;
     size_t sizes[] = {2, 8, 6, 4, 1};
     NeuralNet nn = {0};
     NeuralNetInit(&arena, &series, &nn, sizes, ArrayCount(sizes));
@@ -154,12 +184,12 @@ int main(void)
     RowAT(y_train, 2) = 1;
     RowAT(y_train, 3) = 1;
     /*RowAT(x_train, 2) = 3;*/
-    MatrixPrint(x_train);
-    MatrixPrint(y_train);
+    /*MatrixPrint(x_train);*/
+    /*MatrixPrint(y_train);*/
 
-    /*NeuralNetBackprop(&arena, nn, x_train);*/
+    NeuralNetBackprop(&arena, nn, MatrixRow(x_train, 0), RowAT(y_train, 0));
 
-    NeuralNetLearn(&series, nn, x_train, y_train, 1, 1);
+    /*NeuralNetLearn(&series, nn, x_train, y_train, 1, 1);*/
 
     ArenaFree(&arena);
     return 0;

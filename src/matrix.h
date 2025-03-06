@@ -52,7 +52,7 @@ void MatrixPrint_(Matrix a, const char*);
 void MatrixRandomize(RandomSeries *, Matrix, float, float);
 void MatrixFill(Matrix, float);
 
-Matrix MatrixRow(Matrix, size_t);
+Row MatrixRow(Matrix, size_t);
 void MatrixCopy(Matrix, Matrix);
 
 void MatrixAddScalar(Matrix, Matrix, float);
@@ -60,6 +60,7 @@ void MatrixAddMatrix(Matrix, Matrix, Matrix);
 void MatrixSubScalar(Matrix, Matrix, float);
 void MatrixSubMatrix(Matrix, Matrix, Matrix);
 void MatrixDot(Matrix, Matrix, Matrix);
+void MatrixMulMatrix(Matrix, Matrix, Matrix); // Hadamard Product
 
 void MatrixSum(Matrix, Matrix);
 void MatrixTranspose(Matrix, Matrix);
@@ -156,7 +157,7 @@ MatrixPrint_(Matrix a, const char* name)
 Matrix
 MatrixRow(Matrix a, size_t row)
 {
-    return (Matrix) {
+    return (Row) {
         .rows = 1,
         .cols = a.cols,
         .V = &MatrixAT(a, row, 0),
@@ -278,6 +279,21 @@ MatrixDot(Matrix c, Matrix a, Matrix b)
             for (size_t k = 0; k < b.rows; k++) {
                 MatrixAT(c, i, j) += MatrixAT(a, i, k) * MatrixAT(b, k, j);
             }
+        }
+    }
+}
+
+void
+MatrixMulMatrix(Matrix c, Matrix a, Matrix b)
+{
+    Assert(a.rows == b.rows);
+    Assert(c.rows == b.rows);
+    Assert(c.cols == a.cols);
+    Assert(b.cols == a.cols);
+
+    for (size_t i = 0; i < a.rows; i++) {
+        for (size_t j = 0; j < b.cols; j++) {
+            MatrixAT(c, i, j) = MatrixAT(a, i, j) * MatrixAT(b, i, j);
         }
     }
 }
