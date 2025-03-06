@@ -133,18 +133,13 @@ void NeuralNetLearn(RandomSeries *series,
     {
         size_t shuffleCount = x_train.cols;
         size_t swapIdx[shuffleCount * 2];
-
         MatrixRandomShuffleRow(series, x_train, shuffleCount, swapIdx);
-
-        /*printf("values of swapIdx\n");*/
-        /*for (int j = 0; j < x_train.cols * 2; j++)*/
-        /*{*/
-        /*    printf("%d\n", swapIdx[j]);*/
-        /*}*/
-
         MatrixShuffleCol(y_train, swapIdx, shuffleCount);
 
         // TODO(liam): continue here for learning algo
+        for (int j = 0; j < n; j += batch_size)
+        {
+        }
     }
 
     /*MatrixPrint(x_train);*/
@@ -155,7 +150,7 @@ int main(void)
 {
     Arena arena = {0};
     RandomSeries series = {0};
-    RandomSeed(&series, 123423213);
+    RandomSeed(&series, 24323234);
 
     size_t sizes[] = {2, 8, 6, 4, 1};
     NeuralNet nn = {0};
@@ -183,9 +178,9 @@ int main(void)
     RowAT(y_train, 1) = 1;
     RowAT(y_train, 2) = 1;
     RowAT(y_train, 3) = 1;
-    /*RowAT(x_train, 2) = 3;*/
-    /*MatrixPrint(x_train);*/
-    /*MatrixPrint(y_train);*/
+
+    MatrixPrint(x_train);
+    MatrixPrint(y_train);
 
     NeuralNetBackprop(&arena, nn, MatrixRow(x_train, 0), RowAT(y_train, 0));
 

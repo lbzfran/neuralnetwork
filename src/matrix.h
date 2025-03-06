@@ -139,13 +139,9 @@ void
 MatrixPrint_(Matrix a, const char* name)
 {
     printf("%s = [\n", name);
-    for (size_t i = 0;
-            i < a.rows;
-            i++)
+    for (size_t i = 0; i < a.rows; i++)
     {
-        for (size_t j = 0;
-                j < a.cols;
-                j++)
+        for (size_t j = 0; j < a.cols; j++)
         {
             printf("\t%f ", MatrixAT(a, i, j));
         }
@@ -167,14 +163,8 @@ MatrixRow(Matrix a, size_t row)
 void
 MatrixRandomize(RandomSeries* series, Matrix a, float low, float high)
 {
-    for (size_t i = 0;
-            i < a.rows;
-            i++)
-    {
-        for (size_t j = 0;
-                j < a.cols;
-                j++)
-        {
+    for (size_t i = 0; i < a.rows; i++) {
+        for (size_t j = 0; j < a.cols; j++) {
             MatrixAT(a, i, j) = RandomBetween(series, low, high);
         }
     }
@@ -322,11 +312,6 @@ MatrixTranspose(Matrix b, Matrix a)
 void
 MatrixSigmoid(Matrix a)
 {
-    /*for (size_t i = 0; i < a.rows; i++) {*/
-    /*    for (size_t j = 0; j < a.cols; j++) {*/
-    /*        MatrixAT(a, i, j) = sigmoidf(MatrixAT(a, i, j));*/
-    /*    }*/
-    /*}*/
     MatrixApply(a, sigmoidf);
 }
 
@@ -352,7 +337,7 @@ MatrixShuffleValue(RandomSeries *series, Matrix a)
 }
 
 bool32
-MatrixRandomShuffleRow(RandomSeries * series, Matrix a, size_t count_per_pair, size_t *shuffle_indices)
+MatrixRandomShuffleRow(RandomSeries *series, Matrix a, size_t count_per_pair, size_t *shuffle_indices)
 {
     // NOTE(liam) shuffle_indices' size must be at least a.cols
     bool32 res = true;
