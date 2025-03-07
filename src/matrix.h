@@ -60,6 +60,8 @@ Row MatrixRow(Matrix, size_t);
 void MatrixCopy_(Matrix, Matrix);
 Matrix MatrixCopy(Arena *, Matrix);
 
+void MatrixSliceRow_(Matrix, Matrix, size_t, size_t);
+Matrix MatrixSliceRow(Arena *, Matrix, size_t, size_t);
 
 Matrix MatrixReturnM_(Arena *, Matrix, Matrix, void (*)(Matrix, Matrix, Matrix));
 void MatrixAddM_(Matrix, Matrix, Matrix);
@@ -76,9 +78,11 @@ Matrix MatrixDot(Arena *arena, Matrix a, Matrix b);
 Matrix MatrixReturnS_(Arena *, Matrix, float, void (*)(Matrix, Matrix, float));
 void MatrixAddS_(Matrix, Matrix, float);
 void MatrixSubS_(Matrix, Matrix, float);
+void MatrixMulS_(Matrix, Matrix, float);
 
 #define MatrixAddS(arena, a, f) MatrixReturnS_(arena, a, f, MatrixAddS_)
 #define MatrixSubS(arena, a, f) MatrixReturnS_(arena, a, f, MatrixSubS_)
+#define MatrixMulS(arena, a, f) MatrixReturnS_(arena, a, f, MatrixMulS_)
 
 void MatrixSum(Matrix, Matrix);
 void MatrixTranspose_(Matrix, Matrix);
@@ -311,6 +315,18 @@ MatrixSubM_(Matrix c, Matrix a, Matrix b)
         for (size_t j = 0; j < b.cols; j++) {
             /*c->V[i][j] = a->V[i][j] - b->V[i][j];*/
             MatrixAT(c, i, j) = MatrixAT(a, i, j) - MatrixAT(b, i, j);
+        }
+    }
+}
+
+void
+MatrixMulS_(Matrix b, Matrix a, float x)
+{
+    Assert(a.rows == b.rows);
+    Assert(a.cols == b.cols);
+    for (size_t i = 0; i < a.rows; i++) {
+        for (size_t j = 0; j < a.cols; j++) {
+            MatrixAT(b, i, j) = MatrixAT(a, i, j) * x;
         }
     }
 }
@@ -554,6 +570,30 @@ MatrixShuffleCol(Matrix a, size_t *shuffle_indices, size_t count_per_pair)
         }
     }
     return res;
+}
+
+void
+MatrixSliceRow_(Matrix b, Matrix a, size_t start, size_t end)
+{
+    Assert(b.rows == (end - start));
+    Assert(b.cols == a.cols);
+    Assert(start != end);
+
+    for (size_t i = start; i < end; i++) {
+        for (size_t j = 0; j < a.cols; j++) {
+            MatrixAT(b, i - start, j) = MatrixAT(a, i, j);
+        }
+    }
+}
+
+Matrix
+MatrixSliceRow(Arena *arena, Matrix a, size_t start, size_t end)
+{
+    Matrix result = MatrixArenaAlloc(arena, end - start, a.cols);
+
+    MatrixSliceRow_(result, a, start, end);
+
+    return result;
 }
 
 #endif
