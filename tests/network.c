@@ -22,6 +22,15 @@ typedef struct NeuralHelper {
     Row *A;
 } NeuralHelper;
 
+size_t NNIndexSafe(NeuralNet nn, size_t layerNum, uint32 index)
+{
+    // NOTE(liam): safely index between layer sizes.
+    if (layerNum > nn.layerCount - 2) printf("DEBUG: Truncating %lu layer to %lu\n", layerNum, nn.layerCount - 2);
+    size_t limit = nn.layerSizes[ClampDown(layerNum, nn.layerCount - 2)] - 1;
+    if (index > limit) printf("DEBUG: Truncating %d index to %lu\n", index, limit);
+    return ClampDown(limit, index);
+}
+
 void NeuralNetInit(Arena* arena, RandomSeries *series, NeuralNet* nn, size_t *layerSizes, size_t layerCount)
 {
     nn->layerCount = layerCount; // total # of layers
@@ -40,7 +49,7 @@ void NeuralNetInit(Arena* arena, RandomSeries *series, NeuralNet* nn, size_t *la
 
     for (size_t l = 0; l < layerCount - 1; l++)
     {
-        nn->W[l] = MatrixArenaAlloc(arena, layerSizes[l], layerSizes[l+1]);
+        nn->W[l] = MatrixArenaAlloc(arena, layerSizes[l], layerSizes[l + 1]);
         nn->B[l] = RowArenaAlloc(arena, layerSizes[l + 1]);
 
         // TODO(liam): should this be done by default?
@@ -68,9 +77,9 @@ void NeuralNetForward(NeuralHelper *nh, NeuralNet nn, Row x)
     Row *A = nh->A;
 
     // NOTE(liam): a[1] = z; z = w * a[0] + b
-    MatrixDot(Z[0], x, nn.W[0]);
-    MatrixAddMatrix(Z[0], Z[0], nn.B[0]);
-    MatrixCopy(A[0], Z[0]);
+    MatrixDot_(Z[0], x, nn.W[0]);
+    MatrixAddM_(Z[0], Z[0], nn.B[0]);
+    MatrixCopy_(A[0], Z[0]);
     MatrixSigmoid(A[0]);
 
     /*printf("sizes of misint:\n");*/
@@ -88,9 +97,9 @@ void NeuralNetForward(NeuralHelper *nh, NeuralNet nn, Row x)
         /*    printf("nn.W[%d] = {%lu, %lu}\n", l, nn.W[l].rows, nn.W[l].cols);*/
         /*}*/
 
-        MatrixDot(Z[l], A[l-1], nn.W[l]);
-        MatrixAddMatrix(Z[l], Z[l], nn.B[l]);
-        MatrixCopy(A[l], Z[l]);
+        MatrixDot_(Z[l], A[l-1], nn.W[l]);
+        MatrixAddM_(Z[l], Z[l], nn.B[l]);
+        MatrixCopy_(A[l], Z[l]);
         MatrixSigmoid(A[l]);
     }
 }
@@ -104,24 +113,62 @@ dsigmoidf(float32 z)
 float32 NeuralNetCost(NeuralNet, Matrix);
 
 // uses sgd
-void NeuralNetBackprop(Arena *arena, NeuralNet nn, Row x, float32 y)
+void NeuralNetBackprop(Arena *arena, NeuralNet nn, Row x, Row y)
 {
     NeuralHelper nh = {0};
     NeuralHelperInit(arena, &nh, nn);
+
+    Matrix *dW = PushArray(arena, Matrix, nn.layerCount - 1);
+    Row *dB = PushArray(arena, Row, nn.layerCount - 1);
+
+    for (size_t l = 0; l < nn.layerCount - 1; l++)
+    {
+        dW[l] = MatrixArenaAlloc(arena, nn.layerSizes[l], nn.layerSizes[l + 1]);
+        dB[l] = RowArenaAlloc(arena, nn.layerSizes[l + 1]);
+
+        // TODO(liam): this could be unnecessary.
+        MatrixFill(dW[l], 0.0f);
+        MatrixFill(dB[l], 0.0f);
+    }
 
     NeuralNetForward(&nh, nn, x); // populates nh with A and Z
 
     // TODO(liam): adjust size; should y be a single element instead??
     // How many x per backprop.. 1 example? or a matrix of examples?
     // ANSWER: per SGD, only 1 example, with 1 output example.
-    /*size_t lastLayerSize = nn.layerSizes[nn.layerCount - 2];*/
-    Row delta = RowArenaAlloc(arena, 1);
+    // input size: matrix of size (n examples) x (m data)
+    // output size: row of size 1 to n; 1 for binary classification, and more
+    // for non-binary
+
+    /*size_t lastLayerSize = nn.layerSizes[nn.layerCount - 2] - 1;*/
+    size_t lastLayerSize = NNIndexSafe(nn, nn.layerCount - 2, 999); // finds last layer, last index
+    /*Row delta = RowArenaAlloc(arena, 1);*/
+    /*Row dZ = RowArenaAlloc(arena, 1);*/
+    Row dZ = MatrixCopy(arena, nh.Z[lastLayerSize]);
+
     /*printf("last size: %lu\n", lastLayerSize);*/
 
-    MatrixSubScalar(delta, nh.A[nn.layerCount - 2], y);
-    MatrixPrint(nh.A[nn.layerCount - 2]);
-    printf("y = %f\n", y);
+    Row delta = MatrixSubM(arena, nh.A[lastLayerSize], y);
+    MatrixApply(dZ, dsigmoidf);
+    MatrixMulM_(delta, delta, dZ);
+
+    RowAT(dB[lastLayerSize], 0) = RowAT(delta, 0);
+
+    Matrix A_T = MatrixTranspose(arena, nh.A[lastLayerSize - 1]);
+
+    // TODO(liam): improper sizes
+    MatrixDot_(dW[lastLayerSize], delta, A_T);
+
+    // NOTE(liam): prints
+    MatrixPrint(nh.A[lastLayerSize - 1]);
+    MatrixPrint(x);
+    MatrixPrint(y);
+    MatrixPrint(dZ);
     MatrixPrint(delta);
+    MatrixPrint(dW[lastLayerSize]);
+    MatrixPrint(dB[lastLayerSize]);
+    MatrixPrint(nh.A[lastLayerSize - 1]);
+    MatrixPrint(A_T);
 }
 
 void NeuralNetLearn(RandomSeries *series,
@@ -173,16 +220,16 @@ int main(void)
     MatrixAT(x_train, 3, 0) = 1;
     MatrixAT(x_train, 3, 1) = 1;
 
-    Row y_train = RowArenaAlloc(&arena, 4);
-    RowAT(y_train, 0) = 0;
-    RowAT(y_train, 1) = 1;
-    RowAT(y_train, 2) = 1;
-    RowAT(y_train, 3) = 1;
+    Matrix y_train = MatrixArenaAlloc(&arena, 4, 1);
+    MatrixAT(y_train, 0, 0) = 0;
+    MatrixAT(y_train, 1, 0) = 1;
+    MatrixAT(y_train, 2, 0) = 1;
+    MatrixAT(y_train, 3, 0) = 1;
 
     MatrixPrint(x_train);
     MatrixPrint(y_train);
 
-    NeuralNetBackprop(&arena, nn, MatrixRow(x_train, 0), RowAT(y_train, 0));
+    NeuralNetBackprop(&arena, nn, MatrixRow(x_train, 1), MatrixRow(y_train, 1));
 
     /*NeuralNetLearn(&series, nn, x_train, y_train, 1, 1);*/
 

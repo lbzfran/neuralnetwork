@@ -38,6 +38,9 @@ typedef struct Matrix {
 #define MatrixAT(m, i, j) ((m).V[(i) * m.cols + (j)])
 #define RowAT(r, i) MatrixAT(r, 0, i)
 
+#define MatrixSafeAT(m, i, j) MatrixAT(m, ClampDown(i, m.rows - 1), ClampDown(j, m.cols - 1))
+#define RowSafeAT(r, i) MatrixAT(r, 0, ClampDown(i, r.cols - 1))
+
 Matrix MatrixAlloc(size_t, size_t, float*);
 
 #define MatrixArenaAlloc(arena, i, j) (MatrixAlloc((i), (j), PushArray(arena, float, (i) * (j))))
@@ -53,17 +56,33 @@ void MatrixRandomize(RandomSeries *, Matrix, float, float);
 void MatrixFill(Matrix, float);
 
 Row MatrixRow(Matrix, size_t);
-void MatrixCopy(Matrix, Matrix);
 
-void MatrixAddScalar(Matrix, Matrix, float);
-void MatrixAddMatrix(Matrix, Matrix, Matrix);
-void MatrixSubScalar(Matrix, Matrix, float);
-void MatrixSubMatrix(Matrix, Matrix, Matrix);
-void MatrixDot(Matrix, Matrix, Matrix);
-void MatrixMulMatrix(Matrix, Matrix, Matrix); // Hadamard Product
+void MatrixCopy_(Matrix, Matrix);
+Matrix MatrixCopy(Arena *, Matrix);
+
+
+Matrix MatrixReturnM_(Arena *, Matrix, Matrix, void (*)(Matrix, Matrix, Matrix));
+void MatrixAddM_(Matrix, Matrix, Matrix);
+void MatrixSubM_(Matrix, Matrix, Matrix);
+void MatrixMulM_(Matrix, Matrix, Matrix); // Hadamard Product
+
+#define MatrixAddM(arena, a, b) MatrixReturnM_(arena, a, b, MatrixAddM_)
+#define MatrixSubM(arena, a, b) MatrixReturnM_(arena, a, b, MatrixSubM_)
+#define MatrixMulM(arena, a, b) MatrixReturnM_(arena, a, b, MatrixMulM_)
+
+void MatrixDot_(Matrix, Matrix, Matrix);
+Matrix MatrixDot(Arena *arena, Matrix a, Matrix b);
+
+Matrix MatrixReturnS_(Arena *, Matrix, float, void (*)(Matrix, Matrix, float));
+void MatrixAddS_(Matrix, Matrix, float);
+void MatrixSubS_(Matrix, Matrix, float);
+
+#define MatrixAddS(arena, a, f) MatrixReturnS_(arena, a, f, MatrixAddS_)
+#define MatrixSubS(arena, a, f) MatrixReturnS_(arena, a, f, MatrixSubS_)
 
 void MatrixSum(Matrix, Matrix);
-void MatrixTranspose(Matrix, Matrix);
+void MatrixTranspose_(Matrix, Matrix);
+Matrix MatrixTranspose(Arena *, Matrix);
 
 void MatrixShuffleValue(RandomSeries *, Matrix);
 
@@ -171,7 +190,7 @@ MatrixRandomize(RandomSeries* series, Matrix a, float low, float high)
 }
 
 void
-MatrixCopy(Matrix b, Matrix a)
+MatrixCopy_(Matrix b, Matrix a)
 {
     Assert(a.rows == b.rows);
     Assert(a.cols == b.cols);
@@ -181,6 +200,39 @@ MatrixCopy(Matrix b, Matrix a)
         }
     }
 
+}
+
+Matrix
+MatrixCopy(Arena *arena, Matrix a)
+{
+    Matrix result = MatrixArenaAlloc(arena, a.rows, a.cols);
+
+    MatrixCopy_(result, a);
+
+    return result;
+}
+
+Matrix
+MatrixReturnM_(Arena *arena, Matrix a, Matrix b, void (* mfn)(Matrix, Matrix, Matrix))
+{
+    // NOTE(liam): generic wrapper to return a preallocated matrix,
+    // assuming the given manipulation function takes two matrices that
+    // are the same shape.
+    Matrix result = MatrixArenaAlloc(arena, a.rows, a.cols);
+
+    mfn(result, a, b);
+
+    return result;
+}
+
+Matrix
+MatrixReturnS_(Arena *arena, Matrix a, float f, void (* mfn)(Matrix, Matrix, float))
+{
+    Matrix result = MatrixArenaAlloc(arena, a.rows, a.cols);
+
+    mfn(result, a, f);
+
+    return result;
 }
 
 void
@@ -194,8 +246,11 @@ MatrixFill(Matrix a, float x)
 }
 
 void
-MatrixAddScalar(Matrix b, Matrix a, float x)
+MatrixAddS_(Matrix b, Matrix a, float x)
 {
+    Assert(a.rows == b.rows);
+    Assert(a.cols == b.cols);
+
     for (size_t i = 0; i < a.rows; i++) {
         for (size_t j = 0; j < a.cols; j++) {
             /*b->V[i][j] = a->V[i][j] + x;*/
@@ -205,7 +260,7 @@ MatrixAddScalar(Matrix b, Matrix a, float x)
 }
 
 void
-MatrixAddMatrix(Matrix c, Matrix a, Matrix b)
+MatrixAddM_(Matrix c, Matrix a, Matrix b)
 {
     Assert(a.rows == b.rows);
     Assert(a.cols == b.cols);
@@ -234,8 +289,10 @@ MatrixSum(Matrix b, Matrix a)
 }
 
 void
-MatrixSubScalar(Matrix b, Matrix a, float x)
+MatrixSubS_(Matrix b, Matrix a, float x)
 {
+    Assert(a.rows == b.rows);
+    Assert(a.cols == b.cols);
     for (size_t i = 0; i < a.rows; i++) {
         for (size_t j = 0; j < a.cols; j++) {
             /*b->V[i][j] = a->V[i][j] + x;*/
@@ -245,8 +302,11 @@ MatrixSubScalar(Matrix b, Matrix a, float x)
 }
 
 void
-MatrixSubMatrix(Matrix c, Matrix a, Matrix b)
+MatrixSubM_(Matrix c, Matrix a, Matrix b)
 {
+    Assert(a.rows == b.rows);
+    Assert(a.cols == b.cols);
+    Assert(a.rows == c.rows);
     for (size_t i = 0; i < a.rows; i++) {
         for (size_t j = 0; j < b.cols; j++) {
             /*c->V[i][j] = a->V[i][j] - b->V[i][j];*/
@@ -256,7 +316,7 @@ MatrixSubMatrix(Matrix c, Matrix a, Matrix b)
 }
 
 void
-MatrixDot(Matrix c, Matrix a, Matrix b)
+MatrixDot_(Matrix c, Matrix a, Matrix b)
 {
     // NOTE(liam): implied that both matrix dimensions are the same.
     Assert(a.cols == b.rows);
@@ -273,8 +333,18 @@ MatrixDot(Matrix c, Matrix a, Matrix b)
     }
 }
 
+Matrix
+MatrixDot(Arena *arena, Matrix a, Matrix b)
+{
+    Matrix result = MatrixArenaAlloc(arena, a.rows, b.cols);
+
+    MatrixDot_(result, a, b);
+
+    return result;
+}
+
 void
-MatrixMulMatrix(Matrix c, Matrix a, Matrix b)
+MatrixMulM_(Matrix c, Matrix a, Matrix b)
 {
     Assert(a.rows == b.rows);
     Assert(c.rows == b.rows);
@@ -299,7 +369,7 @@ MatrixApply(Matrix a, float (*fun)(float))
 }
 
 void
-MatrixTranspose(Matrix b, Matrix a)
+MatrixTranspose_(Matrix b, Matrix a)
 {
     for (size_t i = 0; i < b.rows; i++) {
         for (size_t j = 0; j < b.cols; j++) {
@@ -307,6 +377,15 @@ MatrixTranspose(Matrix b, Matrix a)
             MatrixAT(b, i, j) = MatrixAT(a, j, i);
         }
     }
+}
+
+Matrix
+MatrixTranspose(Arena *arena, Matrix a)
+{
+    Matrix result = MatrixArenaAlloc(arena, a.cols, a.rows);
+    MatrixTranspose_(result, a);
+
+    return result;
 }
 
 void
