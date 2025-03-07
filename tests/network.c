@@ -2,6 +2,7 @@
 #define MATRIX_IMPLEMENTATION
 #include "matrix.h"
 #include <math.h>
+#include <stdlib.h>
 #include "random.h"
 
 #define ARENA_IMPLEMENTATION
@@ -26,6 +27,9 @@ typedef struct NeuralBack {
     Matrix *dW;
     Row *dB;
 } NeuralBack;
+
+
+void NeuralNetUpdate(Arena *arena, NeuralNet nn, Matrix x_train, Matrix y_train, size_t exampleCount, float32 rate);
 
 size_t NNIndexSafe(NeuralNet nn, size_t layerNum, uint32 index)
 {
@@ -117,6 +121,12 @@ dsigmoidf(float32 z)
     return z * (1 - z);
 }
 
+float32
+squaref(float32 x)
+{
+    return x * x;
+}
+
 float32 NeuralNetCost(NeuralNet, Matrix);
 
 // uses sgd
@@ -156,9 +166,18 @@ NeuralBack NeuralNetBackprop(Arena *arena, NeuralNet nn, Row x, Row y)
     Row dZ = MatrixCopy(arena, nh.Z[nn.layerCount - 2]);
     MatrixApply(dZ, dsigmoidf);
 
-    Row delta = MatrixSubM(arena, nh.A[nn.layerCount - 2], y);
-    MatrixMulM_(delta, delta, dZ);
+    // NOTE(liam): cost function
+    // TODO(liam): likely fix the cost function application
+    Row error = MatrixSubM(arena, nh.A[nn.layerCount - 2], y);
+    MatrixApply(error, squaref);
 
+    Row delta = MatrixMulM(arena, error, dZ);
+
+    if (isnan(RowAT(delta, 0)))
+    {
+        fprintf(stderr, "ERROR: NaN value detected in delta.\n");
+        exit(1);
+    }
     /*MatrixPrint(delta);*/
 
     RowAT(dB[nn.layerCount - 2], 0) = RowAT(delta, 0);
@@ -171,8 +190,9 @@ NeuralBack NeuralNetBackprop(Arena *arena, NeuralNet nn, Row x, Row y)
         dZ = MatrixCopy(arena, nh.Z[l]);
         MatrixApply(dZ, dsigmoidf);
 
-        delta = MatrixDot(arena, delta, MatrixTranspose(arena, nn.W[l + 1]));
-        MatrixMulM_(delta, delta, dZ);
+        error = MatrixDot(arena, delta, MatrixTranspose(arena, nn.W[l + 1]));
+        MatrixApply(error, squaref);
+        delta = MatrixMulM(arena, error, dZ);
 
         RowAT(dB[l], 0) = RowAT(delta, 0);
 
@@ -182,7 +202,6 @@ NeuralBack NeuralNetBackprop(Arena *arena, NeuralNet nn, Row x, Row y)
     return nb;
 }
 
-void NeuralNetUpdate(Arena *arena, NeuralNet nn, Matrix x_train, Matrix y_train, size_t exampleCount, float32 rate);
 
 void NeuralNetLearn(Arena *arena, RandomSeries *series,
         NeuralNet nn, Matrix x_train, Matrix y_train,
@@ -197,7 +216,7 @@ void NeuralNetLearn(Arena *arena, RandomSeries *series,
 
     for (size_t e = 0; e < epochs; e++)
     {
-        size_t shuffleCount = x_train.cols;
+        size_t shuffleCount = x_train.cols - 1;
         size_t swapIdx[shuffleCount * 2];
         MatrixRandomShuffleRow(series, x_train, shuffleCount, swapIdx);
         MatrixShuffleCol(y_train, swapIdx, y_train.cols - 1);
@@ -270,9 +289,9 @@ int main(void)
 {
     Arena arena = {0};
     RandomSeries series = {0};
-    RandomSeed(&series, 24323234);
+    RandomSeed(&series, 993232);
 
-    size_t sizes[] = {2, 8, 4, 8, 12, 6, 1};
+    size_t sizes[] = {2, 8, 16, 1};
     NeuralNet nn = {0};
     NeuralNetInit(&arena, &series, &nn, sizes, ArrayCount(sizes));
 
@@ -295,8 +314,8 @@ int main(void)
 
     Matrix y_train = MatrixArenaAlloc(&arena, 4, 1);
     MatrixAT(y_train, 0, 0) = 0;
-    MatrixAT(y_train, 1, 0) = 1;
-    MatrixAT(y_train, 2, 0) = 1;
+    MatrixAT(y_train, 1, 0) = 0;
+    MatrixAT(y_train, 2, 0) = 0;
     MatrixAT(y_train, 3, 0) = 1;
 
     /*MatrixPrint(x_train);*/
@@ -307,23 +326,24 @@ int main(void)
 
     /*NeuralNetUpdate(&arena, nn, x_train, y_train, 4, 0.001);*/
 
-    NeuralNetLearn(&arena, &series, nn, x_train, y_train, 100, 0.0001, 1);
+    NeuralNetLearn(&arena, &series, nn, x_train, y_train, 1000, 0.0001, 1);
 
     NeuralForward nh = {0};
     NeuralHelperInit(&arena, &nh, nn);
 
-    NeuralNetForward(&nh, nn, MatrixRow(x_train, 2));
-
-    float32 prediction = MatrixAT(nh.A[nn.layerCount - 2], 0, 0);
-    printf("prediction: %f NAND %f: %f\n", MatrixAT(x_train, 2, 0), MatrixAT(x_train, 2, 1),
-           prediction);
-
     NeuralNetForward(&nh, nn, MatrixRow(x_train, 0));
+    MatrixPrint(nh.A[nn.layerCount - 2]);
+    NeuralNetForward(&nh, nn, MatrixRow(x_train, 1));
+    MatrixPrint(nh.A[nn.layerCount - 2]);
+    NeuralNetForward(&nh, nn, MatrixRow(x_train, 2));
+    MatrixPrint(nh.A[nn.layerCount - 2]);
+    NeuralNetForward(&nh, nn, MatrixRow(x_train, 3));
+    MatrixPrint(nh.A[nn.layerCount - 2]);
 
-    prediction = MatrixAT(nh.A[nn.layerCount - 2], 0, 0);
-    printf("prediction: %f NAND %f: %f\n", MatrixAT(x_train, 0, 0), MatrixAT(x_train, 0, 1),
-           prediction);
-
+    /*for (int i = 0; i < nn.layerCount - 1; i++)*/
+    /*{*/
+    /*    MatrixPrint(nh.A[i]);*/
+    /*}*/
     /*for (int i = 0; i < ArrayCount(sizes) - 1; i++)*/
     {
         /*MatrixPrint(nn.W[i]);*/
