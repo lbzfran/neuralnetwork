@@ -207,6 +207,8 @@ NeuralBack NeuralNetBackprop(Arena *arena, NeuralNet nn, Row x, Row y)
     // NOTE(liam): delta * A[-2].transpose()
     MatrixDot_(dW[pos], MatrixTranspose(arena, nh.A[pos - 1]), delta);
 
+    MatrixPrint(dW[pos]);
+
     // LAYERS: { 2, 18, 1 }
     //           ^
     // WEIGHT SIZES: { 2x18, 18x1 }
@@ -234,7 +236,7 @@ NeuralBack NeuralNetBackprop(Arena *arena, NeuralNet nn, Row x, Row y)
         /*RowAT(dB[l], 0) = RowAT(delta, 0);*/
         MatrixCopy_(dB[pos], delta);
 
-        if (pos > 0)
+        if (pos)
         {
             MatrixDot_(dW[pos], MatrixTranspose(arena, nh.A[pos - 1]), delta);
         }
@@ -242,7 +244,11 @@ NeuralBack NeuralNetBackprop(Arena *arena, NeuralNet nn, Row x, Row y)
         {
             // use x on the last iteration at first layer
             MatrixDot_(dW[pos], MatrixTranspose(arena, x), delta);
+
+            MatrixPrint(x);
+            MatrixPrint(delta);
         }
+        MatrixPrint(dW[pos]);
         /*{*/
         /*    printf("sizes of misint:\n");*/
         /*    printf("dW[%d] = {%lu, %lu}\n", pos, dW[pos].rows, dW[pos].cols);*/
@@ -353,9 +359,9 @@ int main(void)
 {
     Arena arena = {0};
     RandomSeries series = {0};
-    RandomSeed(&series, 232134);
+    RandomSeed(&series, 2321234);
 
-    size_t sizes[] = {2, 8, 16, 8, 1};
+    size_t sizes[] = {2, 8, 1};
     NeuralNet nn = {0};
     NeuralNetInit(&arena, &series, &nn, sizes, ArrayCount(sizes));
 
