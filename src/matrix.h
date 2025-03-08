@@ -115,7 +115,7 @@ sigmoidf(float x)
 float
 reluf(float x)
 {
-    return x ? x > 0 : 0;
+    return x > 0 ? x : 0;
 }
 
 /*float*/
