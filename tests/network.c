@@ -109,31 +109,13 @@ void NeuralNetForward(NeuralForward *nh, NeuralNet nn, Row x)
     MatrixCopy_(A[0], Z[0]);
     MatrixApply(A[0], sigmoidf);
 
-    /*MatrixPrint(Z[0]);*/
-    /*MatrixPrint(A[0]);*/
-    /*printf("sizes of misint:\n");*/
-    /*printf("Z[%d] = {%lu, %lu}\n", 0, Z[0].rows, Z[0].cols);*/
-    /*printf("x = {%lu, %lu}\n", x.rows, x.cols);*/
-    /*printf("nn.W[%d] = {%lu, %lu}\n", 0, nn.W[0].rows, nn.W[0].cols);*/
     for (uint32 l = 1; l < nn.layerCount - 1; l++)
     {
-        /*if (l == nn.layerCount - 2)*/
-        /*{*/
-        /*    printf("sizes of misint:\n");*/
-        /*    printf("Z[%d] = {%lu, %lu}\n", l, Z[l].rows, Z[l].cols);*/
-        /*    printf("A[%d] = {%lu, %lu}\n", l-1, A[l-1].rows, A[l-1].cols);*/
-        /*    printf("nn.W[%d] = {%lu, %lu}\n", l, nn.W[l].rows, nn.W[l].cols);*/
-        /*}*/
-
         MatrixDot_(Z[l], A[l-1], nn.W[l]);
         MatrixAddM_(Z[l], Z[l], nn.B[l]);
         MatrixCopy_(A[l], Z[l]);
         MatrixApply(A[l], sigmoidf);
-
-        /*MatrixPrint(Z[l]);*/
-        /*MatrixPrint(A[l]);*/
     }
-
 }
 
 float32 NeuralNetCost(NeuralNet, Matrix);
@@ -202,39 +184,25 @@ NeuralBack NeuralNetBackprop(Arena *arena, NeuralNet nn, Row x, Row y)
     }
     MatrixPrint_(delta, "cost");
 
+    MatrixPrint(dB[pos]);
     MatrixCopy_(dB[pos], delta);
+    MatrixPrint(delta);
 
     // NOTE(liam): delta * A[-2].transpose()
     MatrixDot_(dW[pos], MatrixTranspose(arena, nh.A[pos - 1]), delta);
 
-    MatrixPrint(dW[pos]);
-
-    // LAYERS: { 2, 18, 1 }
-    //           ^
-    // WEIGHT SIZES: { 2x18, 18x1 }
-    //                  ^
-    // OUTPUT SIZES: { 1x18, 1x1 }
-    {
-        /*printf("sizes of misint:\n");*/
-        /*printf("dW[%lu] = {%lu, %lu}\n", pos, dW[pos].rows, dW[pos].cols);*/
-        /**/
-        /*printf("nh.A_T[%lu] = {%lu, %lu}\n", pos, nh.A[pos].cols, nh.A[pos].rows);*/
-        /*printf("delta = {%lu, %lu}\n", delta.rows, delta.cols);*/
-    }
-
-    /*for (uint32 l = nn.layerCount - 3; l > 0; l--)*/
     while (pos--)
     {
         dZ = MatrixCopy(arena, nh.A[pos]);
         MatrixApply(dZ, dsigmoidf);
 
         error = MatrixDot(arena, delta, MatrixTranspose(arena, nn.W[pos + 1]));
-        /*MatrixApply(error, squaref);*/
         MatrixMulS_(error, error, 2.0f);
         delta = MatrixMulM(arena, error, dZ);
 
-        /*RowAT(dB[l], 0) = RowAT(delta, 0);*/
+        MatrixPrint(dB[pos]);
         MatrixCopy_(dB[pos], delta);
+        MatrixPrint(delta);
 
         if (pos)
         {
@@ -248,16 +216,6 @@ NeuralBack NeuralNetBackprop(Arena *arena, NeuralNet nn, Row x, Row y)
             MatrixPrint(x);
             MatrixPrint(delta);
         }
-        MatrixPrint(dW[pos]);
-        /*{*/
-        /*    printf("sizes of misint:\n");*/
-        /*    printf("dW[%d] = {%lu, %lu}\n", pos, dW[pos].rows, dW[pos].cols);*/
-        /**/
-        /*    printf("nh.A_T[%d] = {%lu, %lu}\n", pos, nh.A[pos].cols, nh.A[pos].rows);*/
-        /*    printf("delta = {%lu, %lu}\n", delta.rows, delta.cols);*/
-        /*    printf("x = {%lu, %lu}\n", x.rows, x.cols);*/
-        /**/
-        /*}*/
     }
 
     return nb;
@@ -359,7 +317,7 @@ int main(void)
 {
     Arena arena = {0};
     RandomSeries series = {0};
-    RandomSeed(&series, 2321234);
+    RandomSeed(&series, 232123);
 
     size_t sizes[] = {2, 8, 1};
     NeuralNet nn = {0};
@@ -384,8 +342,8 @@ int main(void)
 
     Matrix y_train = MatrixArenaAlloc(&arena, 4, 1);
     MatrixAT(y_train, 0, 0) = 0;
-    MatrixAT(y_train, 1, 0) = 0;
-    MatrixAT(y_train, 2, 0) = 0;
+    MatrixAT(y_train, 1, 0) = 1;
+    MatrixAT(y_train, 2, 0) = 1;
     MatrixAT(y_train, 3, 0) = 1;
 
     /*MatrixPrint(x_train);*/
@@ -396,7 +354,7 @@ int main(void)
 
     /*NeuralNetUpdate(&arena, nn, x_train, y_train, 4, 0.001);*/
 
-    NeuralNetLearn(&arena, &series, nn, x_train, y_train, 10000, 0.001, 1);
+    NeuralNetLearn(&arena, &series, nn, x_train, y_train, 10000, 1e-1, 1);
 
     NeuralForward nh = {0};
     NeuralHelperInit(&arena, &nh, nn);
