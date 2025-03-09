@@ -30,9 +30,9 @@ typedef struct NeuralBack {
 
 
 float32
-dsigmoidf(float32 z)
+dsigmoidf(float32 x)
 {
-    return z * (1 - z);
+    return sigmoidf(x) * (1 - sigmoidf(x));
 }
 
 float32
@@ -156,7 +156,7 @@ NeuralBack NeuralNetBackprop(Arena *arena, NeuralNet nn, Row x, Row y)
     // NOTE(liam): delta = (A[-1] - y) * dsigmoidf(Z[-1])
     size_t pos = nn.layerCount - 2;
 
-    Row dZ = MatrixCopy(arena, nh.A[pos]);
+    Row dZ = MatrixCopy(arena, nh.Z[pos]);
     MatrixApply(dZ, dsigmoidf);
 
     // NOTE(liam): cost function
@@ -184,25 +184,21 @@ NeuralBack NeuralNetBackprop(Arena *arena, NeuralNet nn, Row x, Row y)
     }
     MatrixPrint_(delta, "cost");
 
-    MatrixPrint(dB[pos]);
     MatrixCopy_(dB[pos], delta);
-    MatrixPrint(delta);
 
     // NOTE(liam): delta * A[-2].transpose()
     MatrixDot_(dW[pos], MatrixTranspose(arena, nh.A[pos - 1]), delta);
 
     while (pos--)
     {
-        dZ = MatrixCopy(arena, nh.A[pos]);
+        dZ = MatrixCopy(arena, nh.Z[pos]);
         MatrixApply(dZ, dsigmoidf);
 
         error = MatrixDot(arena, delta, MatrixTranspose(arena, nn.W[pos + 1]));
         MatrixMulS_(error, error, 2.0f);
         delta = MatrixMulM(arena, error, dZ);
 
-        MatrixPrint(dB[pos]);
         MatrixCopy_(dB[pos], delta);
-        MatrixPrint(delta);
 
         if (pos)
         {
@@ -212,9 +208,6 @@ NeuralBack NeuralNetBackprop(Arena *arena, NeuralNet nn, Row x, Row y)
         {
             // use x on the last iteration at first layer
             MatrixDot_(dW[pos], MatrixTranspose(arena, x), delta);
-
-            MatrixPrint(x);
-            MatrixPrint(delta);
         }
     }
 
@@ -317,19 +310,13 @@ int main(void)
 {
     Arena arena = {0};
     RandomSeries series = {0};
-    RandomSeed(&series, 232123);
+    RandomSeed(&series, 232122);
 
-    size_t sizes[] = {2, 8, 1};
+    size_t sizes[] = {2, 8, 6, 8, 6, 1};
     NeuralNet nn = {0};
     NeuralNetInit(&arena, &series, &nn, sizes, ArrayCount(sizes));
 
-    /*for (int i = 0; i < ArrayCount(sizes) - 1; i++)*/
-    {
-        /*MatrixPrint(nn.W[i]);*/
-        /*MatrixPrint(nn.B[i]);*/
-    }
-
-    // TODO(liam): super inefficient assignments, might rework later
+    // TODO(liam): inefficient assignments, might rework later
     Matrix x_train = MatrixArenaAlloc(&arena, 4, 2);
     MatrixAT(x_train, 0, 0) = 0;
     MatrixAT(x_train, 0, 1) = 0;
@@ -341,20 +328,12 @@ int main(void)
     MatrixAT(x_train, 3, 1) = 1;
 
     Matrix y_train = MatrixArenaAlloc(&arena, 4, 1);
-    MatrixAT(y_train, 0, 0) = 0;
-    MatrixAT(y_train, 1, 0) = 1;
-    MatrixAT(y_train, 2, 0) = 1;
+    MatrixAT(y_train, 0, 0) = 1;
+    MatrixAT(y_train, 1, 0) = 0;
+    MatrixAT(y_train, 2, 0) = 0;
     MatrixAT(y_train, 3, 0) = 1;
 
-    /*MatrixPrint(x_train);*/
-    /*MatrixPrint(y_train);*/
-
-    /*NeuralNetBackprop(&arena, nn, MatrixRow(x_train, 1), MatrixRow(y_train, 1));*/
-
-
-    /*NeuralNetUpdate(&arena, nn, x_train, y_train, 4, 0.001);*/
-
-    NeuralNetLearn(&arena, &series, nn, x_train, y_train, 10000, 1e-1, 1);
+    NeuralNetLearn(&arena, &series, nn, x_train, y_train, 100000, 1e-2, 1);
 
     NeuralForward nh = {0};
     NeuralHelperInit(&arena, &nh, nn);
@@ -373,16 +352,6 @@ int main(void)
     NeuralNetForward(&nh, nn, MatrixRow(x_train, 3));
     MatrixPrint(MatrixRow(x_train, 3));
     MatrixPrint(nh.A[nn.layerCount - 2]);
-
-    /*for (int i = 0; i < nn.layerCount - 1; i++)*/
-    /*{*/
-    /*    MatrixPrint(nh.A[i]);*/
-    /*}*/
-    /*for (int i = 0; i < ArrayCount(sizes) - 1; i++)*/
-    {
-        /*MatrixPrint(nn.W[i]);*/
-        /*MatrixPrint(nn.B[i]);*/
-    }
 
     ArenaFree(&arena);
     return 0;
