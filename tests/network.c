@@ -334,8 +334,6 @@ void NeuralNetLearn(Arena *arena, RandomSeries *series,
                 NeuralNetUpdate(arena, nn, x_batches[j], y_batches[j], batch_size, rate);
             }
         }
-
-
         /*printf("Epoch %lu completed.\n", e);*/
     }
 
@@ -395,10 +393,6 @@ int main(void)
     Arena arena = {0};
     RandomSeries series = {0};
     RandomSeed(&series, 232122);
-
-    size_t sizes[] = {2, 8, 6, 8, 6, 1};
-    NeuralNet nn = {0};
-    NeuralNetInit(&arena, &series, &nn, sizes, ArrayCount(sizes));
 
     // TODO(liam): inefficient assignments, might rework later
     Matrix x_train = MatrixArenaAlloc(&arena, 4, 2);
