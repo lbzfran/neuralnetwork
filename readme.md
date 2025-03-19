@@ -4,10 +4,10 @@
 My attempt at writing a functionable Neural Network in C.
 
 The core functionality is outlined as follows:
-- [ ] Feed-Forwarding
-- [ ] Backward Propagation (with Gradient Descent)
-- [ ] Dynamic Input and Layer Count
-- [ ] Simple to use
+- [x] Feed-Forwarding
+- [x] Backward Propagation (with Gradient Descent)
+- [x] Dynamic Input and Layer Count
+- [x] Simple to use
 
 # Build
 

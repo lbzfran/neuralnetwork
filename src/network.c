@@ -1,43 +1,18 @@
+#include "network.h"
 
-#define MATRIX_IMPLEMENTATION
-#include "matrix.h"
-#include <math.h>
-#include <stdlib.h>
-#include <time.h>
-#include "random.h"
+float32
+sigmoidf(float32 x)
+{
+    // NOTE(liam): return value between 0 and 1 based on how far along
+    // the given float32 is from -inf to inf.
+    return 1.f / (1.f + expf(-x));
+}
 
-#ifdef WIN32
-#include <io.h>
-#define F_OK 0
-#define access _access
-#else
-#include <unistd.h>
-#endif
-
-#define ARENA_IMPLEMENTATION
-#include "arena.h"
-
-typedef struct NeuralNet {
-    uint32 layerCount;
-    uint32 layerCapacity;
-    uint32 *layerSizes;
-
-    Matrix *W;
-    Row *B;
-} NeuralNet;
-
-// NOTE(liam): this will only exist inside functions pertaining to the
-// NeuralNet struct, so the size will always be derived from there.
-typedef struct NeuralForward {
-    Row *Z;
-    Row *A;
-} NeuralForward;
-
-typedef struct NeuralBack {
-    Matrix *dW;
-    Row *dB;
-} NeuralBack;
-
+float32
+reluf(float32 x)
+{
+    return x > 0 ? x : 0;
+}
 
 float32
 dsigmoidf(float32 x)
@@ -51,15 +26,7 @@ dreluf(float32 z)
     return z >= 0 ? 1 : 0;
 }
 
-float32
-squaref(float32 x)
-{
-    return x * x;
-}
-
-void NeuralNetUpdate(Arena *arena, NeuralNet nn, Matrix x_train, Matrix y_train, uint32 exampleCount, float32 rate);
-
-uint32 NNIndexSafe(NeuralNet nn, uint32 layerNum, uint32 index)
+uint32 NeuralNetIndexSafe(NeuralNet nn, uint32 layerNum, uint32 index)
 {
     // NOTE(liam): safely index between layer sizes.
     if (layerNum > nn.layerCount - 2) printf("DEBUG: Truncating %d layer to %d\n", layerNum, nn.layerCount - 2);
@@ -85,30 +52,18 @@ bool32 NeuralNetSave(NeuralNet nn, char *path)
         size_t expected = 0;
         size_t written = 0;
 
-        /*expected = 1 + nn.layerCount;*/
-        /*written += fwrite(&nn.layerCount, sizeof(nn.layerCount), 1, fp);*/
-        /*written += fwrite(nn.layerSizes, sizeof(nn.layerSizes[0]), nn.layerCount, fp);*/
-        /**/
-        /*if (written != expected)*/
-        /*{*/
-        /*    fprintf(stderr, "write failed at start!! written %zu out ouf %zu.\n", written, expected);*/
-        /*    result = false;*/
-        /*}*/
-        /*else*/
+        // TODO(liam): writing matrices.
+        for (uint32 l = 0; l < nn.layerCount - 1; l++)
         {
-            // TODO(liam): writing matrices.
-            for (uint32 l = 0; l < nn.layerCount - 1; l++)
-            {
-                expected += nn.layerSizes[l] * nn.layerSizes[l + 1] + nn.layerSizes[l + 1];
-                written += fwrite(nn.W[l].V, sizeof(float32), nn.layerSizes[l] * nn.layerSizes[l + 1], fp);
-                written += fwrite(nn.B[l].V, sizeof(float32), nn.layerSizes[l + 1], fp);
-            }
+            expected += nn.layerSizes[l] * nn.layerSizes[l + 1] + nn.layerSizes[l + 1];
+            written += fwrite(nn.W[l].V, sizeof(float32), nn.layerSizes[l] * nn.layerSizes[l + 1], fp);
+            written += fwrite(nn.B[l].V, sizeof(float32), nn.layerSizes[l + 1], fp);
+        }
 
-            if (written != expected)
-            {
-                fprintf(stderr, "write failed! written %zu out ouf %zu.\n", written, expected);
-                result = false;
-            }
+        if (written != expected)
+        {
+            fprintf(stderr, "write failed! written %zu out ouf %zu.\n", written, expected);
+            result = false;
         }
 
         fclose(fp);
@@ -133,49 +88,34 @@ bool32 NeuralNetLoad(Arena *arena, NeuralNet *nn, char *path, uint32 *layerSizes
     {
         size_t expected = 0;
         size_t read = 0;
-        /*read += fread(&nn->layerCount, sizeof(nn->layerCount), 1, fp);*/
-        /**/
-        /*nn->layerSizes = PushArray(arena, uint32, nn->layerCount);*/
-        /*ZeroArray(nn->layerCount, nn->layerSizes);*/
-        /**/
-        /*read += fread(nn->layerSizes, sizeof(nn->layerSizes[0]), (size_t)nn->layerCount, fp);*/
-        /**/
-        /*expected = 1 + nn->layerCount;*/
-        /*if (read != expected)*/
+
+        Matrix *W = PushArray(arena, Matrix, nn->layerCount - 1);
+        Row *B = PushArray(arena, Row, nn->layerCount - 1);
+
+        nn->W = W;
+        nn->B = B;
+
+        /*for (uint32 l = 0; l < nn->layerCount - 1; l++)*/
         /*{*/
-        /*    fprintf(stderr, "read failed at start!! read %zu out ouf %zu.\n", read, expected);*/
-        /*    result = false;*/
+        /*    printf("value at %d is: %d x %d\n", l, nn->layerSizes[l], nn->layerSizes[l+1]);*/
         /*}*/
-        /*else*/
+
+        for (uint32 l = 0; l < nn->layerCount - 1; l++)
         {
-            Matrix *W = PushArray(arena, Matrix, nn->layerCount - 1);
-            Row *B = PushArray(arena, Row, nn->layerCount - 1);
+            printf("value at %d is: %d x %d\n", l, nn->layerSizes[l], nn->layerSizes[l+1]);
+            nn->W[l] = MatrixArenaAlloc(arena, nn->layerSizes[l], nn->layerSizes[l + 1]);
+            nn->B[l] = RowArenaAlloc(arena, nn->layerSizes[l + 1]);
 
-            nn->W = W;
-            nn->B = B;
+            read += fread(W[l].V, sizeof(float32), nn->layerSizes[l] * nn->layerSizes[l + 1], fp);
+            read += fread(B[l].V, sizeof(float32), nn->layerSizes[l + 1], fp);
 
-            /*for (uint32 l = 0; l < nn->layerCount - 1; l++)*/
-            /*{*/
-            /*    printf("value at %d is: %d x %d\n", l, nn->layerSizes[l], nn->layerSizes[l+1]);*/
-            /*}*/
+            expected += nn->layerSizes[l] * nn->layerSizes[l + 1] + nn->layerSizes[l + 1];
+        }
 
-            for (uint32 l = 0; l < nn->layerCount - 1; l++)
-            {
-                printf("value at %d is: %d x %d\n", l, nn->layerSizes[l], nn->layerSizes[l+1]);
-                nn->W[l] = MatrixArenaAlloc(arena, nn->layerSizes[l], nn->layerSizes[l + 1]);
-                nn->B[l] = RowArenaAlloc(arena, nn->layerSizes[l + 1]);
-
-                read += fread(W[l].V, sizeof(float32), nn->layerSizes[l] * nn->layerSizes[l + 1], fp);
-                read += fread(B[l].V, sizeof(float32), nn->layerSizes[l + 1], fp);
-
-                expected += nn->layerSizes[l] * nn->layerSizes[l + 1] + nn->layerSizes[l + 1];
-            }
-
-            if (read != expected)
-            {
-                fprintf(stderr, "read failed! read %zu out ouf %zu.\n", read, expected);
-                result = false;
-            }
+        if (read != expected)
+        {
+            fprintf(stderr, "read failed! read %zu out ouf %zu.\n", read, expected);
+            result = false;
         }
         fclose(fp);
     }
@@ -188,8 +128,6 @@ void NeuralNetSizePushSingle(Arena *arena, NeuralNet *nn, uint32 size)
     if (nn->layerCount + 1 > nn->layerCapacity)
     {
         uint32 newCap = Max(Max(16, nn->layerCapacity * 2), nn->layerCount + 1);
-        /*nn->layerSizes = PushCopy(arena, newCap, nn->layerSizes);*/
-
         uint32 *newSizes = PushArray(arena, uint32, newCap);
 
         uint32 *ptr = newSizes;
@@ -219,8 +157,6 @@ void NeuralNetSizePush(Arena *arena, NeuralNet *nn, uint32 *layerSizes, uint32 l
     if (nn->layerCount + newSizes > nn->layerCapacity)
     {
         uint32 newCap = Max(Max(16, nn->layerCapacity * 2), nn->layerCount + newSizes);
-        /*nn->layerSizes = PushCopy(arena, newCap, nn->layerSizes);*/
-
         uint32 *newSizes = PushArray(arena, uint32, newCap);
 
         uint32 *ptr = newSizes;
@@ -300,8 +236,6 @@ void NeuralNetForward(NeuralForward *nh, NeuralNet nn, Row x)
     }
 }
 
-float32 NeuralNetCost(NeuralNet, Matrix);
-
 // uses sgd
 NeuralBack NeuralNetBackprop(Arena *arena, NeuralNet nn, Row x, Row y)
 {
@@ -365,7 +299,6 @@ NeuralBack NeuralNetBackprop(Arena *arena, NeuralNet nn, Row x, Row y)
     {
         MatrixCopy_(dB[pos], delta);
 
-        // NOTE(liam): delta * A[-2].transpose()
         MatrixDot_(dW[pos], MatrixTranspose(arena, nh.A[pos - 1]), delta);
 
         /*MatrixPrint(dW[pos]);*/
@@ -471,8 +404,6 @@ void NeuralNetUpdate(Arena *arena, NeuralNet nn,
 
         for (uint32 j = 0; j < nn.layerCount - 1; j++)
         {
-            /*MatrixPrint(nb.dB[j]);*/
-            /*MatrixPrint(nb.dW[j]);*/
             MatrixSum(dB[j], nb.dB[j]);
             MatrixSum(dW[j], nb.dW[j]);
         }
@@ -480,8 +411,6 @@ void NeuralNetUpdate(Arena *arena, NeuralNet nn,
 
     for (uint32 i = 0; i < nn.layerCount - 1; i++)
     {
-        /*MatrixSubS_(nn.W[i], nn.W[i], (rate / exampleCount));*/
-        /*MatrixSubM_(nn.W[i], nn.W[i], dW[i]);*/
         float32 actualRate = rate / exampleCount;
 
         MatrixMulS_(dW[i], dW[i], actualRate);
@@ -490,63 +419,4 @@ void NeuralNetUpdate(Arena *arena, NeuralNet nn,
         MatrixMulS_(dB[i], dB[i], actualRate);
         MatrixSubM_(nn.B[i], nn.B[i], dB[i]);
     }
-}
-
-int main(int argc, char **argv)
-{
-    bool32 force_train = false;
-    if (argc > 1)
-    {
-        force_train = (bool32)*argv[1];
-    }
-
-    Arena arena = {0};
-    RandomSeries series = {0};
-    RandomSeed(&series, time(NULL));
-
-    // TODO(liam): inefficient assignments, might rework later
-    Matrix x_train = MatrixArenaAlloc(&arena, 4, 2);
-    MatrixAT(x_train, 0, 0) = 0;
-    MatrixAT(x_train, 0, 1) = 0;
-    MatrixAT(x_train, 1, 0) = 0;
-    MatrixAT(x_train, 1, 1) = 1;
-    MatrixAT(x_train, 2, 0) = 1;
-    MatrixAT(x_train, 2, 1) = 0;
-    MatrixAT(x_train, 3, 0) = 1;
-    MatrixAT(x_train, 3, 1) = 1;
-
-    Matrix y_train = MatrixArenaAlloc(&arena, 4, 1);
-    MatrixAT(y_train, 0, 0) = 0;
-    MatrixAT(y_train, 1, 0) = 1;
-    MatrixAT(y_train, 2, 0) = 1;
-    MatrixAT(y_train, 3, 0) = 0;
-
-    uint32 sizes[] = {2, 64, 32, 16, 8, 24, 1};
-    NeuralNet nn = {0};
-
-    if (access("hehe.bin", F_OK) == 0 && !force_train)
-    {
-        NeuralNetLoad(&arena, &nn, "hehe.bin", sizes, ArrayCount(sizes));
-    }
-    else
-    {
-        NeuralNetCompile(&arena, &series, &nn, sizes, ArrayCount(sizes), true);
-        NeuralNetLearn(&arena, &series, nn, x_train, y_train, 10000, 0.01, 1);
-        NeuralNetSave(nn, "hehe.bin");
-    }
-
-    NeuralForward nh = {0};
-    NeuralHelperInit(&arena, &nh, nn);
-
-    MatrixPrint(x_train);
-
-    for (uint32 i = 0; i < y_train.rows; i++)
-    {
-        NeuralNetForward(&nh, nn, MatrixRow(x_train, i));
-        MatrixPrint(MatrixRow(x_train, i));
-        MatrixPrint(nh.A[nn.layerCount - 2]);
-    }
-
-    ArenaFree(&arena);
-    return 0;
 }

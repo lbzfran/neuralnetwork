@@ -23,12 +23,6 @@
 # define m_free free
 #endif
 
-// NOTE(liam): specific math functions for neural net operations
-// TODO(liam): likely move these in nn.h once its ready.
-float reluf(float x);
-float sigmoidf(float x);
-/*float softmaxf(float x);*/
-
 typedef struct Matrix {
     size_t rows;
     size_t cols;
@@ -98,31 +92,10 @@ bool32 MatrixShuffleCol(Matrix, size_t *, size_t);
 #define RowShuffle MatrixShuffleCol
 
 void MatrixApply(Matrix, float (*)(float));
-void MatrixSigmoid(Matrix); // "apply" wrapper with sigmoidf
 
 #endif
 
 #ifdef MATRIX_IMPLEMENTATION
-
-float
-sigmoidf(float x)
-{
-    // NOTE(liam): return value between 0 and 1 based on how far along
-    // the given float is from -inf to inf.
-    return 1.f / (1.f + expf(-x));
-}
-
-float
-reluf(float x)
-{
-    return x > 0 ? x : 0;
-}
-
-/*float*/
-/*softmax(float x)*/
-/*{*/
-/**/
-/*}*/
 
 Matrix
 MatrixAlloc(size_t rows, size_t cols, float* V)
@@ -402,18 +375,6 @@ MatrixTranspose(Arena *arena, Matrix a)
     MatrixTranspose_(result, a);
 
     return result;
-}
-
-void
-MatrixSigmoid(Matrix a)
-{
-    MatrixApply(a, sigmoidf);
-}
-
-void
-MatrixReLU(Matrix a)
-{
-    MatrixApply(a, reluf);
 }
 
 void
