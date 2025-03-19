@@ -73,7 +73,7 @@ bool32 NeuralNetSave(NeuralNet nn, char *path)
     bool32 result = true;
 
 
-    FILE *fp = fopen(path, "wb+");
+    FILE *fp = fopen(path, "w+");
     if (fp == NULL)
     {
         result = false;
@@ -87,8 +87,6 @@ bool32 NeuralNetSave(NeuralNet nn, char *path)
         // TODO(liam): writing matrices.
         for (uint32 l = 0; l < nn.layerCount - 1; l++)
         {
-            /*dW[l] = MatrixArenaAlloc(arena, nn.layerSizes[l], nn.layerSizes[l + 1]);*/
-            /*dB[l] = RowArenaAlloc(arena, nn.layerSizes[l + 1]);*/
             bytesWritten += fwrite(nn.W[l].V, sizeof(float32), nn.layerSizes[l] * nn.layerSizes[l + 1], fp);
             bytesWritten += fwrite(nn.B[l].V, sizeof(float32), nn.layerSizes[l + 1], fp);
         }
@@ -103,16 +101,19 @@ bool32 NeuralNetLoad(Arena *arena, NeuralNet *nn, char *path)
 {
     bool32 result = true;
 
-    FILE *fp = fopen(path, "rb");
+    FILE *fp = fopen(path, "r");
     if (fp == NULL)
     {
         result = false;
     }
     else
     {
+        // TODO
         fread(&nn->layerCount, sizeof(uint32), 1, fp);
 
         nn->layerSizes = PushArray(arena, uint32, nn->layerCount);
+        ZeroArray(nn->layerCount, nn->layerSizes);
+
         fread(nn->layerSizes, sizeof(uint32), nn->layerCount, fp);
 
         Matrix *W = PushArray(arena, Matrix, nn->layerCount - 1);
@@ -121,8 +122,14 @@ bool32 NeuralNetLoad(Arena *arena, NeuralNet *nn, char *path)
         nn->W = W;
         nn->B = B;
 
+        /*for (uint32 l = 0; l < nn->layerCount - 1; l++)*/
+        /*{*/
+        /*    printf("value at %d is: %d x %d\n", l, nn->layerSizes[l], nn->layerSizes[l+1]);*/
+        /*}*/
+
         for (uint32 l = 0; l < nn->layerCount - 1; l++)
         {
+            printf("value at %d is: %d x %d\n", l, nn->layerSizes[l], nn->layerSizes[l+1]);
             nn->W[l] = MatrixArenaAlloc(arena, nn->layerSizes[l], nn->layerSizes[l + 1]);
             nn->B[l] = RowArenaAlloc(arena, nn->layerSizes[l + 1]);
 
@@ -264,7 +271,7 @@ NeuralBack NeuralNetBackprop(Arena *arena, NeuralNet nn, Row x, Row y)
         // NOTE(liam): delta * A[-2].transpose()
         MatrixDot_(dW[pos], MatrixTranspose(arena, nh.A[pos - 1]), delta);
 
-        MatrixPrint(dW[pos]);
+        /*MatrixPrint(dW[pos]);*/
 
         // LAYERS: { 2, 18, 1 }
         //           ^
