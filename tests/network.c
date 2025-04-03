@@ -38,6 +38,19 @@ typedef struct NeuralBack {
     Row *dB;
 } NeuralBack;
 
+float
+sigmoidf(float x)
+{
+    // NOTE(liam): return value between 0 and 1 based on how far along
+    // the given float is from -inf to inf.
+    return 1.f / (1.f + expf(-x));
+}
+
+float
+reluf(float x)
+{
+    return x > 0 ? x : 0;
+}
 
 float32
 dsigmoidf(float32 x)
@@ -337,8 +350,6 @@ NeuralBack NeuralNetBackprop(Arena *arena, NeuralNet nn, Row x, Row y)
 
 
     // NOTE(liam): cost function
-    // TODO(liam): likely fix the cost function application
-
     // MSE Loss
     Row dZ = MatrixCopy(arena, nh.Z[pos]);
     MatrixApply(dZ, dsigmoidf);
@@ -420,12 +431,11 @@ void NeuralNetLearn(Arena *arena, RandomSeries *series,
         /*uint32 swapIdx[shuffleCount * 2];*/
         /*MatrixRandomShuffleRow(series, x_train, shuffleCount, swapIdx);*/
         /*MatrixShuffleCol(y_train, swapIdx, y_train.cols - 1);*/
-
-        /*if (batch_size == 1)*/
-        /*{*/
-        /*    NeuralNetUpdate(arena, nn, x_train, y_train, batch_size, rate);*/
-        /*}*/
-        /*else*/
+        if (batch_size == 1)
+        {
+            NeuralNetUpdate(arena, nn, x_train, y_train, batch_size, rate);
+        }
+        else
         {
             for (int j = 0; j < n; j += batch_size)
             {
@@ -531,7 +541,7 @@ int main(int argc, char **argv)
     else
     {
         NeuralNetCompile(&arena, &series, &nn, sizes, ArrayCount(sizes), true);
-        NeuralNetLearn(&arena, &series, nn, x_train, y_train, 10000, 0.01, 1);
+        NeuralNetLearn(&arena, &series, nn, x_train, y_train, 10000, 0.01, 2);
         NeuralNetSave(nn, "hehe.bin");
     }
 
